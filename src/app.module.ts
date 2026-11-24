@@ -7,6 +7,7 @@ import { MailModule } from './mail/mail.module';
 import { HealthModule } from './modules/health/health.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 /**
@@ -34,6 +35,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     HealthModule,
     UsersModule,
     AuthModule,
+    OnboardingModule,
   ],
   providers: [
     // Enable JWT guard globally: all routes require token unless marked @Public()

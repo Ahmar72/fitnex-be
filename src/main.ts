@@ -81,6 +81,7 @@ async function bootstrap() {
     )
     .addTag('Authentication', 'Endpoints for user registration, login, token refresh, and password recovery')
     .addTag('Users', 'Endpoints for managing authenticated user profiles and preferences')
+    .addTag('Onboarding & Metabolic Calculator', 'Endpoints for Mifflin-St Jeor caloric computation and onboarding goal setup')
     .addTag('System & Health', 'Endpoints for server diagnostics, MongoDB connection state, and uptime')
     .build();
 
