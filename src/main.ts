@@ -27,12 +27,7 @@ async function bootstrap() {
 
   // Configure CORS for Frontend Integration
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-    ],
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -95,8 +90,8 @@ async function bootstrap() {
     },
   });
 
-  // Start HTTP Server
-  await app.listen(port);
+  // Start HTTP Server on all network interfaces
+  await app.listen(port, '0.0.0.0');
   logger.log(`====================================================`);
   logger.log(`🚀 Fitnex Backend running at: http://localhost:${port}/${apiPrefix}`);
   logger.log(`📖 Swagger Documentation at: http://localhost:${port}/api/docs`);
