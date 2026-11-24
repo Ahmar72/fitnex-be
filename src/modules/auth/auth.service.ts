@@ -86,6 +86,7 @@ export class AuthService {
         email: createdUser.email,
         name: createdUser.name,
         role: createdUser.role,
+        isEmailVerified: createdUser.isEmailVerified,
         preferredLanguage: createdUser.preferredLanguage,
       },
     };
@@ -94,7 +95,12 @@ export class AuthService {
   /**
    * Validates 6-digit verification code and marks account verified
    */
-  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{
+    message: string;
+    accessToken?: string;
+    refreshToken?: string;
+    user?: any;
+  }> {
     const { email, token } = verifyEmailDto;
 
     const user = await this.usersService.userModel
@@ -103,6 +109,7 @@ export class AuthService {
         verificationToken: token,
         verificationTokenExpires: { $gt: new Date() },
       })
+      .select('+verificationToken +verificationTokenExpires')
       .exec();
 
     if (!user) {
@@ -111,6 +118,11 @@ export class AuthService {
 
     // Mark email verified
     await this.usersService.markEmailAsVerified(user._id.toString());
+    user.isEmailVerified = true;
+
+    // Generate JWT access and refresh tokens for immediate authentication
+    const tokens = await this.generateTokens(user);
+    await this.updateRefreshToken(user._id.toString(), tokens.refreshToken);
 
     // Dispatch styled Welcome email now that email is confirmed
     this.mailService
@@ -119,6 +131,16 @@ export class AuthService {
 
     return {
       message: 'Email verified successfully! Welcome to Fitnex.',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isEmailVerified: true,
+        preferredLanguage: user.preferredLanguage,
+      },
     };
   }
 
@@ -185,6 +207,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        isEmailVerified: user.isEmailVerified,
         preferredLanguage: user.preferredLanguage,
       },
     };
@@ -203,7 +226,10 @@ export class AuthService {
         secret: refreshSecret,
       });
 
-      const user = await this.usersService.findById(payload.sub);
+      const user = await this.usersService.userModel
+        .findById(payload.sub)
+        .select('+refreshTokenHash')
+        .exec();
       if (!user || !user.refreshTokenHash) {
         throw new UnauthorizedException('Access denied. Invalid refresh token.');
       }
@@ -232,6 +258,7 @@ export class AuthService {
           email: user.email,
           name: user.name,
           role: user.role,
+          isEmailVerified: user.isEmailVerified,
           preferredLanguage: user.preferredLanguage,
         },
       };
@@ -287,6 +314,7 @@ export class AuthService {
         resetPasswordToken: token,
         resetPasswordExpires: { $gt: new Date() },
       })
+      .select('+resetPasswordToken +resetPasswordExpires')
       .exec();
 
     if (!user) {
@@ -298,6 +326,7 @@ export class AuthService {
     const newPasswordHash = await bcrypt.hash(newPassword, salt);
 
     await this.usersService.updatePassword(user._id.toString(), newPasswordHash);
+    await this.usersService.updateRefreshToken(user._id.toString(), null);
 
     // Dispatch confirmation email
     this.mailService

@@ -26,10 +26,13 @@ export class UsersService {
   }
 
   /**
-   * Finds a user by email (returns password hash for authentication)
+   * Finds a user by email (explicitly selects password hash for authentication)
    */
   async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email: email.toLowerCase().trim() }).exec();
+    return this.userModel
+      .findOne({ email: email.toLowerCase().trim() })
+      .select('+password')
+      .exec();
   }
 
   /**

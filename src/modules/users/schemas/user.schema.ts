@@ -36,7 +36,7 @@ export class User extends Document {
   })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, select: false })
   password: string;
 
   @Prop({ required: true, trim: true })
@@ -54,19 +54,19 @@ export class User extends Document {
   @Prop({ default: false })
   isEmailVerified: boolean;
 
-  @Prop({ default: null })
+  @Prop({ default: null, select: false })
   verificationToken: string;
 
-  @Prop({ default: null })
+  @Prop({ default: null, select: false })
   verificationTokenExpires: Date;
 
-  @Prop({ default: null })
+  @Prop({ default: null, select: false })
   refreshTokenHash: string;
 
-  @Prop({ default: null })
+  @Prop({ default: null, select: false })
   resetPasswordToken: string;
 
-  @Prop({ default: null })
+  @Prop({ default: null, select: false })
   resetPasswordExpires: Date;
 
   @Prop({ default: 'en' })

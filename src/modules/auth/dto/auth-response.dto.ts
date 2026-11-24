@@ -16,6 +16,9 @@ export class AuthUserDataDto {
   @ApiProperty({ example: 'user' })
   role: string;
 
+  @ApiProperty({ example: true })
+  isEmailVerified: boolean;
+
   @ApiProperty({ example: 'en' })
   preferredLanguage: string;
 }
