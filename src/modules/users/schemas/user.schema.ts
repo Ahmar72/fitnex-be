@@ -20,6 +20,8 @@ export type UserDocument = HydratedDocument<User>;
       delete ret.refreshTokenHash;
       delete ret.resetPasswordToken;
       delete ret.resetPasswordExpires;
+      delete ret.verificationToken;
+      delete ret.verificationTokenExpires;
       return ret;
     },
   },
@@ -51,6 +53,12 @@ export class User extends Document {
 
   @Prop({ default: false })
   isEmailVerified: boolean;
+
+  @Prop({ default: null })
+  verificationToken: string;
+
+  @Prop({ default: null })
+  verificationTokenExpires: Date;
 
   @Prop({ default: null })
   refreshTokenHash: string;

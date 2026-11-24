@@ -16,6 +16,8 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { UserDocument } from '../users/schemas/user.schema';
 
@@ -23,7 +25,7 @@ import { UserDocument } from '../users/schemas/user.schema';
  * Authentication Service
  * 
  * Handles user registration, credential validation, JWT token issuance,
- * refresh token rotation, password hashing, and Mailtrap transactional notifications.
+ * refresh token rotation, email verification, and Mailtrap transactional notifications.
  */
 @Injectable()
 export class AuthService {
@@ -37,7 +39,8 @@ export class AuthService {
   ) {}
 
   /**
-   * Registers a new user, hashes password, saves in MongoDB, and sends welcome email
+   * Registers a new user, hashes password, generates verification OTP,
+   * saves in MongoDB, and dispatches verification email via Mailtrap.
    */
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
@@ -55,16 +58,25 @@ export class AuthService {
       password: hashedPassword,
     });
 
+    // Generate 6-digit email verification code with 24-hour expiration
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.usersService.setVerificationToken(
+      createdUser._id.toString(),
+      verificationCode,
+      expires,
+    );
+
     // Generate JWT access and refresh tokens
     const tokens = await this.generateTokens(createdUser);
 
     // Save hashed refresh token for secure token rotation
     await this.updateRefreshToken(createdUser._id.toString(), tokens.refreshToken);
 
-    // Asynchronously dispatch welcome email via Mailtrap (do not block user response)
+    // Dispatch verification email via Mailtrap asynchronously
     this.mailService
-      .sendWelcomeEmail(createdUser.email, createdUser.name)
-      .catch((err) => this.logger.warn(`Welcome email dispatch skipped: ${err.message}`));
+      .sendVerificationEmail(createdUser.email, createdUser.name, verificationCode)
+      .catch((err) => this.logger.warn(`Verification email dispatch skipped: ${err.message}`));
 
     return {
       accessToken: tokens.accessToken,
@@ -76,6 +88,68 @@ export class AuthService {
         role: createdUser.role,
         preferredLanguage: createdUser.preferredLanguage,
       },
+    };
+  }
+
+  /**
+   * Validates 6-digit verification code and marks account verified
+   */
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+    const { email, token } = verifyEmailDto;
+
+    const user = await this.usersService.userModel
+      .findOne({
+        email: email.toLowerCase().trim(),
+        verificationToken: token,
+        verificationTokenExpires: { $gt: new Date() },
+      })
+      .exec();
+
+    if (!user) {
+      throw new BadRequestException('Verification code is invalid or has expired');
+    }
+
+    // Mark email verified
+    await this.usersService.markEmailAsVerified(user._id.toString());
+
+    // Dispatch styled Welcome email now that email is confirmed
+    this.mailService
+      .sendWelcomeEmail(user.email, user.name)
+      .catch((err) => this.logger.warn(`Welcome email dispatch skipped: ${err.message}`));
+
+    return {
+      message: 'Email verified successfully! Welcome to Fitnex.',
+    };
+  }
+
+  /**
+   * Resends verification code to user
+   */
+  async resendVerification(resendDto: ResendVerificationDto): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(resendDto.email);
+
+    if (!user) {
+      return {
+        message: 'If an account with that email exists, a new verification code has been sent.',
+      };
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        message: 'This account email is already verified. You can log in directly.',
+      };
+    }
+
+    // Generate new code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.usersService.setVerificationToken(user._id.toString(), verificationCode, expires);
+
+    // Dispatch via Mailtrap
+    await this.mailService.sendVerificationEmail(user.email, user.name, verificationCode);
+
+    return {
+      message: 'If an account with that email exists, a new verification code has been sent.',
     };
   }
 
@@ -187,7 +261,7 @@ export class AuthService {
       };
     }
 
-    // Generate a 6-digit verification code or random hex token
+    // Generate a secure 6-digit or random hex token
     const resetToken = crypto.randomBytes(20).toString('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
 
@@ -202,14 +276,14 @@ export class AuthService {
   }
 
   /**
-   * Resets password using valid reset token
+   * Resets password using valid reset token and sends confirmation email
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, newPassword } = resetPasswordDto;
 
     // Search user with valid, non-expired token
-    const user = await (this.usersService as any).userModel
-      ?.findOne({
+    const user = await this.usersService.userModel
+      .findOne({
         resetPasswordToken: token,
         resetPasswordExpires: { $gt: new Date() },
       })
@@ -224,6 +298,11 @@ export class AuthService {
     const newPasswordHash = await bcrypt.hash(newPassword, salt);
 
     await this.usersService.updatePassword(user._id.toString(), newPasswordHash);
+
+    // Dispatch confirmation email
+    this.mailService
+      .sendPasswordResetSuccessEmail(user.email, user.name)
+      .catch((err) => this.logger.warn(`Reset confirmation email skipped: ${err.message}`));
 
     return { message: 'Password has been reset successfully. You can now log in.' };
   }

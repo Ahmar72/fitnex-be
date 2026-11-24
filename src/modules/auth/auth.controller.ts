@@ -19,6 +19,8 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -28,8 +30,8 @@ import { UserDocument } from '../users/schemas/user.schema';
 /**
  * Authentication Controller
  * 
- * Provides endpoints for user registration, authentication, token refresh,
- * logout, password recovery, and authenticated profile verification.
+ * Provides endpoints for user registration, authentication, email verification,
+ * token refresh, logout, password recovery, and authenticated profile verification.
  */
 @ApiTags('Authentication')
 @Controller('auth')
@@ -41,11 +43,11 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register a new user account',
-    description: 'Creates a new user, hashes password, returns access and refresh tokens, and sends welcome email.',
+    description: 'Creates a new user, hashes password, returns access and refresh tokens, and sends verification OTP via Mailtrap.',
   })
   @ApiResponse({
     status: 201,
-    description: 'User registered successfully',
+    description: 'User registered successfully and verification email sent',
     type: AuthResponseDto,
   })
   @ApiResponse({
@@ -58,6 +60,40 @@ export class AuthController {
   })
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
+  }
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify email address with 6-digit code',
+    description: 'Validates verification code sent via Mailtrap, marks account verified, and sends welcome email.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired verification code',
+  })
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend email verification code',
+    description: 'Generates a fresh 6-digit verification code and dispatches it via Mailtrap.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent if account exists and is unverified',
+  })
+  async resendVerification(@Body() resendDto: ResendVerificationDto) {
+    return this.authService.resendVerification(resendDto);
   }
 
   @Public()
@@ -176,7 +212,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Password reset successfully',
+    description: 'Password reset successfully and confirmation email sent',
   })
   @ApiResponse({
     status: 400,

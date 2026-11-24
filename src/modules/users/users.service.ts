@@ -14,7 +14,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(
     @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
+    public readonly userModel: Model<UserDocument>,
   ) {}
 
   /**
@@ -70,6 +70,40 @@ export class UsersService {
    */
   async updateRefreshToken(id: string, refreshTokenHash: string | null): Promise<void> {
     await this.userModel.findByIdAndUpdate(id, { refreshTokenHash }).exec();
+  }
+
+  /**
+   * Stores email verification token and expiration
+   */
+  async setVerificationToken(
+    id: string,
+    token: string,
+    expires: Date,
+  ): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        { verificationToken: token, verificationTokenExpires: expires },
+        { new: true },
+      )
+      .exec();
+  }
+
+  /**
+   * Verifies email: sets isEmailVerified to true and clears token
+   */
+  async markEmailAsVerified(id: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          isEmailVerified: true,
+          verificationToken: null,
+          verificationTokenExpires: null,
+        },
+        { new: true },
+      )
+      .exec();
   }
 
   /**
