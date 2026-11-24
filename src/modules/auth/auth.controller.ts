@@ -63,6 +63,22 @@ export class AuthController {
   }
 
   @Public()
+  @Post('signup')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Register a new user account (alias for /register)',
+    description: 'Creates a new user, hashes password, returns access and refresh tokens, and sends verification OTP via Mailtrap.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully and verification email sent',
+    type: AuthResponseDto,
+  })
+  async signup(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+    return this.authService.register(registerDto);
+  }
+
+  @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
