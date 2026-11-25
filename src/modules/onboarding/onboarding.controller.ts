@@ -80,6 +80,29 @@ export class OnboardingController {
 
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
+  @Post('submit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Submit completed onboarding profile (standard PRD alias)',
+    description: 'Computes targets and saves user physical statistics, training goal, and calorie targets in MongoDB.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Onboarding profile saved successfully',
+  })
+  async submitOnboarding(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SaveOnboardingDto,
+  ) {
+    const profile = await this.onboardingService.saveOnboarding(userId, dto);
+    return {
+      message: 'Onboarding profile saved successfully',
+      data: profile,
+    };
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({
     summary: 'Get current user onboarding and metabolic profile',

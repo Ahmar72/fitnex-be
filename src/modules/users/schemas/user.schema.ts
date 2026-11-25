@@ -6,8 +6,8 @@ export type UserDocument = HydratedDocument<User>;
 /**
  * User Mongoose Schema
  * 
- * Stores user account credentials, profile data, roles,
- * and security tokens. Sensitive fields are hidden from JSON transforms.
+ * Stores user account credentials, profile data, roles, application settings,
+ * and security tokens. Sensitive fields are hidden from JSON transforms and queries.
  */
 @Schema({
   timestamps: true,
@@ -71,6 +71,21 @@ export class User extends Document {
 
   @Prop({ default: 'en' })
   preferredLanguage: string;
+
+  @Prop({ default: 'kg', enum: ['kg', 'lbs'] })
+  weightUnit: string;
+
+  @Prop({ default: 'cm', enum: ['cm', 'ft'] })
+  heightUnit: string;
+
+  @Prop({ default: 'dark', enum: ['system', 'light', 'dark'] })
+  theme: string;
+
+  @Prop({ default: true })
+  voiceGuidelines: boolean;
+
+  @Prop({ default: 60 })
+  restTimerSeconds: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

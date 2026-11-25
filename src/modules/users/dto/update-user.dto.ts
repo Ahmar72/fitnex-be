@@ -1,8 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 /**
- * Update User Profile DTO
+ * Update User Profile & Settings DTO
  */
 export class UpdateUserDto {
   @ApiPropertyOptional({
@@ -22,10 +22,55 @@ export class UpdateUserDto {
   avatar?: string;
 
   @ApiPropertyOptional({
-    example: 'ur',
+    example: 'en',
     description: 'Updated preferred language code for voice guidelines and UI',
   })
   @IsString()
   @IsOptional()
   preferredLanguage?: string;
+
+  @ApiPropertyOptional({
+    example: 'kg',
+    enum: ['kg', 'lbs'],
+    description: 'Preferred weight unit',
+  })
+  @IsOptional()
+  @IsIn(['kg', 'lbs'])
+  weightUnit?: string;
+
+  @ApiPropertyOptional({
+    example: 'cm',
+    enum: ['cm', 'ft'],
+    description: 'Preferred height unit',
+  })
+  @IsOptional()
+  @IsIn(['cm', 'ft'])
+  heightUnit?: string;
+
+  @ApiPropertyOptional({
+    example: 'dark',
+    enum: ['system', 'light', 'dark'],
+    description: 'Preferred application theme',
+  })
+  @IsOptional()
+  @IsIn(['system', 'light', 'dark'])
+  theme?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Enable or disable speech synthesis voice overview guidelines',
+  })
+  @IsOptional()
+  @IsBoolean()
+  voiceGuidelines?: boolean;
+
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Default rest timer interval in seconds',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  @Max(300)
+  restTimerSeconds?: number;
 }
