@@ -26,6 +26,8 @@
 | **Auth & Security** | Registration, login, OTP verification, password recovery, token revocation, role escalation defense | **16/16 Passed** | Nov 24, 2026 |
 | **Exercises Catalog** | 1,324 movements pagination, keyword search, taxonomy filters, cached facets, multi-lingual steps, favorites | **31/31 Passed** | Nov 24, 2026 |
 | **Workouts & Plans** | Builder draft sync, routine loading, 9 plan schedules, program enrollment, continuous progression, cancellation | **52/52 Passed** | Nov 25, 2026 |
+| **Master Audit** | Full audit across phases 1–4 with settings and password change | **46/46 Passed** | Nov 25, 2026 |
+| **History & Analytics** | Session logging, volume calculation, PR detection, streak engine, dashboard summary | **33/33 Passed** | Nov 25, 2026 |
 
 ---
 
