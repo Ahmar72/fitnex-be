@@ -41,9 +41,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         error = resObj.error || exception.name;
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name;
-      this.logger.error(`Unhandled Exception: ${exception.message}`, exception.stack);
+      if (exception.name === 'CastError') {
+        statusCode = HttpStatus.BAD_REQUEST;
+        message = 'Invalid resource identifier format.';
+        error = 'Bad Request';
+      } else {
+        statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+        message = 'An unexpected internal server error occurred. Please try again later.';
+        error = 'Internal Server Error';
+        this.logger.error(`Unhandled Exception: ${exception.message}`, exception.stack);
+      }
     }
 
     response.status(statusCode).json({

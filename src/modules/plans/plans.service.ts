@@ -155,10 +155,13 @@ export class PlansService implements OnModuleInit {
    * Retrieves detailed program metadata and schedule by ID
    */
   async findById(id: string): Promise<PlanDocument> {
+    const conditions: any[] = [{ planId: id }];
+    if (Types.ObjectId.isValid(id)) {
+      conditions.push({ _id: new Types.ObjectId(id) });
+    }
+
     const plan = await this.planModel
-      .findOne({
-        $or: [{ planId: id }, { _id: Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null }],
-      })
+      .findOne({ $or: conditions })
       .exec();
 
     if (!plan) {

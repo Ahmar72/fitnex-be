@@ -86,6 +86,9 @@ export class User extends Document {
 
   @Prop({ default: 60 })
   restTimerSeconds: number;
+
+  @Prop({ type: Object, default: {} })
+  profile: Record<string, any>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

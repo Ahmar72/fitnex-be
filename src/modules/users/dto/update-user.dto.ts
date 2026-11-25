@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 /**
  * Update User Profile & Settings DTO
@@ -73,4 +73,11 @@ export class UpdateUserDto {
   @Min(15)
   @Max(300)
   restTimerSeconds?: number;
+
+  @ApiPropertyOptional({
+    description: 'User onboarding training & metabolic goal profile data',
+  })
+  @IsOptional()
+  @IsObject()
+  profile?: Record<string, any>;
 }

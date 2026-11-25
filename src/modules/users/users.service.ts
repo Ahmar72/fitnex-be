@@ -53,6 +53,9 @@ export class UsersService {
    * Finds a user by ID
    */
   async findById(id: string): Promise<UserDocument> {
+    if (!id || typeof id !== 'string' || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      throw new NotFoundException(`User with ID "${id}" was not found`);
+    }
     const user = await this.userModel.findById(id).exec();
     if (!user) {
       throw new NotFoundException(`User with ID "${id}" was not found`);
@@ -64,6 +67,9 @@ export class UsersService {
    * Updates user profile fields and settings
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
+    if (!id || typeof id !== 'string' || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      throw new NotFoundException(`User with ID "${id}" was not found`);
+    }
     const user = await this.userModel
       .findByIdAndUpdate(id, { $set: updateUserDto }, { new: true })
       .exec();
@@ -82,6 +88,9 @@ export class UsersService {
     userId: string,
     dto: ChangePasswordDto,
   ): Promise<{ message: string }> {
+    if (!userId || typeof userId !== 'string' || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      throw new NotFoundException(`User with ID "${userId}" was not found`);
+    }
     const user = await this.userModel.findById(userId).select('+password').exec();
     if (!user) {
       throw new NotFoundException(`User with ID "${userId}" was not found`);
