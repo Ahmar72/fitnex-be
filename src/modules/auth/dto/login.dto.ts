@@ -6,16 +6,16 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
  */
 export class LoginDto {
   @ApiProperty({
-    example: 'user@example.com',
-    description: 'Registered email address',
+    example: 'athlete@fitnex.com',
+    description: 'Registered email address (seed default: athlete@fitnex.com)',
   })
   @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsNotEmpty({ message: 'Email address is required' })
   email: string;
 
   @ApiProperty({
-    example: 'SecurePass123!',
-    description: 'Account password',
+    example: 'Password123!',
+    description: 'Account password (seed default: Password123!)',
   })
   @IsString()
   @IsNotEmpty({ message: 'Password is required' })
