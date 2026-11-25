@@ -73,12 +73,12 @@ This living document tracks the granular development progress across all project
 
 ---
 
-## Phase 7: Client Integration & Full System Verification (NEXT)
-- [ ] Connect `fitnex-fe` API client (`api.js`) to backend endpoints.
-- [ ] Ensure `AuthContext` maintains session tokens, rotation, and profile sync.
-- [ ] Connect `DataContext` to live `/exercises` and `/exercises/facets`.
-- [ ] Connect `WorkoutContext` to `/workouts` and `/history`.
-- [ ] Connect `Plans.jsx` to `/plans` and `/plans/active`.
-- [ ] Connect `Nutrition.jsx` to `/meals` and `/meals/daily-summary`.
-- [ ] Full end-to-end regression validation.
-- **Status:** Pending
+## Phase 7: Client Integration & Full System Verification
+- [x] Expand `fitnex-fe` API client (`api.js`) with automatic token rotation and full module coverage.
+- [x] Verify `AuthContext` maintains session tokens, rotation, and profile sync.
+- [x] Connect `DataContext` to live `/exercises` and `/exercises/facets` with offline asset fallback.
+- [x] Connect `WorkoutContext` to `/workouts` draft, `/exercises/favorites/me`, and `/history` logging.
+- [x] Connect `Plans.jsx` to `/plans` and `/plans/active/me` enrollment/cancellation.
+- [x] Connect `Nutrition.jsx` to `/meals` and `/meals/daily-summary` live calorie budget tracking.
+- [x] Run 13/13 automated frontend proxy and E2E integration tests.
+- **Status:** Complete (Verified & Pushed on branch `feature/phase-7-client-integration`, merged to `main`)

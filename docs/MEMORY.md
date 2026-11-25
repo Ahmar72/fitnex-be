@@ -30,31 +30,28 @@
 | **History & Analytics** | Session logging, volume calculation, PR detection, streak engine, dashboard summary | **33/33 Passed** | Nov 25, 2026 |
 | **Phase 6 Nutrition** | 52 recipes, 7 categories, favorite toggling, food logging, daily summary vs targets | **12/12 Passed** | Nov 25, 2026 |
 | **Full Repo Regression**| Cross-module end-to-end integration across all Phases 1–6 | **12/12 Passed** | Nov 25, 2026 |
+| **Phase 7 Client E2E** | Live frontend proxy communication, token injection, contexts and page integrations | **13/13 Passed** | Nov 25, 2026 |
 
 ---
 
 ## 3. Git Repository Tracking
 
 - **Backend Repository:** `https://github.com/Ahmar72/fitnex-be.git` (Branch: `main`)
-  - Latest Commit: `d2b9989` ("merge: integrate Phase 6 nutrition and meal planner module")
-  - Feature Branch: `feature/phase-6-nutrition-meals` merged and pushed.
+  - Latest Commit: `d01c0f6` ("docs: update TASKS.md and MEMORY.md with Phase 6 nutrition completion")
   - Clean working directory, all changes pushed to GitHub.
 - **Frontend Repository:** `https://github.com/Ahmar72/fitnex-fe.git` (Branch: `main`)
-  - Latest Commit: `6ed79eb` ("Add email verification, forgot password, and reset password views")
+  - Latest Commit: `2141e30` ("merge: integrate Phase 7 client modules and live backend communication")
+  - Feature Branch: `feature/phase-7-client-integration` merged and pushed.
   - Clean working directory, all changes pushed to GitHub.
 
 ---
 
-## 4. Key Configurations & Environment
+## 4. Key Configurations & Pre-Configured Accounts
 
-- **Mailtrap SMTP Sandbox:**
-  - Host: `sandbox.smtp.mailtrap.io`
-  - Port: `2525`
-  - Auth: Credentials configured in `.env` (Never commit `.env` to Git).
-- **Security Protocols:**
-  - JWT Access Secret configured with 15-minute expiration.
-  - JWT Refresh Secret configured with 7-day rotation.
-  - Sensitive user fields guarded with `select: false`.
 - **Pre-Configured Accounts:**
   - Athlete Account: `athlete@fitnex.com` / `Password123!`
   - Admin/Personal Account: `ahmar@123.com` (and `ahmer@123.com`) / `Password123!`
+- **Client Offline Resilience:**
+  - `DataContext` fetches live movements from `/exercises` with transparent fallback to local asset.
+  - `WorkoutContext` mirrors favorites, draft, and sessions to local storage for instant guest/offline access.
+  - `api.js` provides automatic 401 token refresh rotation.
