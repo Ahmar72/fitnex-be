@@ -11,6 +11,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { ExercisesModule } from './modules/exercises/exercises.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
 import { PlansModule } from './modules/plans/plans.module';
+import { HistoryModule } from './modules/history/history.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 /**
@@ -42,6 +44,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ExercisesModule,
     WorkoutsModule,
     PlansModule,
+    HistoryModule,
+    DashboardModule,
   ],
   providers: [
     // Enable JWT guard globally: all routes require token unless marked @Public()
