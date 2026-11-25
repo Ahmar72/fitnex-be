@@ -146,7 +146,7 @@ export class ExercisesService implements OnModuleInit {
       query.equipment = equipment.toLowerCase().trim();
     }
     if (search && search.trim()) {
-      const term = search.trim();
+      const term = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(term, 'i');
       query.$or = [{ name: regex }, { target: regex }, { bodyPart: regex }, { equipment: regex }];
     }
