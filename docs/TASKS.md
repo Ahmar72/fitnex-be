@@ -58,26 +58,27 @@ This living document tracks the granular development progress across all project
 - [x] Expose history endpoints: `GET /history`, `POST /history`, `GET /history/streak`, `GET /history/prs`.
 - [x] Expose dashboard aggregate endpoint: `GET /dashboard/summary`.
 - [x] Run automated tests for Phase 5 (33/33 passed).
-- **Status:** Complete (Verified & Pushed on feature branch and merged to main)
+- **Status:** Complete (Verified & Pushed)
 
 ---
 
-## Phase 6: Nutrition, Meal Planner & Daily Calorie Tracking (NEXT)
-- [ ] Create `Meal` schema, `UserMealLog` schema, and `UserMealFavorite` schema.
-- [ ] Seed 28 chef-curated recipes from `fitnex-fe/src/data/meals.js`.
-- [ ] Implement daily meal logging and consumption tracking.
-- [ ] Implement daily summary calculation: consumed calories/macros vs user's Mifflin-St Jeor target.
-- [ ] Expose meal endpoints under `/api/v1/meals`.
-- [ ] Run automated tests for Phase 6.
-- **Status:** Pending
+## Phase 6: Nutrition, Meal Planner & Daily Calorie Tracking
+- [x] Create `Meal` schema, `UserMealLog` schema, and `UserMealFavorite` schema.
+- [x] Extract and auto-seed 52 chef-curated recipes and 7 categories from `meals-seed.json`.
+- [x] Implement daily meal logging, servings multiplier, and consumption tracking.
+- [x] Implement daily summary calculation: consumed calories/macros vs user's Mifflin-St Jeor metabolic target.
+- [x] Expose meal endpoints under `/api/v1/meals` (`/meals`, `/meals/categories`, `/meals/favorites/me`, `/meals/favorites/:id`, `/meals/logs`, `/meals/logs/me`, `/meals/daily-summary`, `/meals/:id`).
+- [x] Run 12/12 Phase 6 automated tests and 12/12 full repository regression suite.
+- **Status:** Complete (Verified & Pushed on branch `feature/phase-6-nutrition-meals`, merged to `main`)
 
 ---
 
-## Phase 7: Client Integration & Full System Verification
-- [ ] Implement typed API client (`api.js`) in `fitnex-fe`.
-- [ ] Connect `AuthContext` to backend session state and token refresh.
-- [ ] Connect `DataContext` to `/exercises` and `/exercises/facets`.
+## Phase 7: Client Integration & Full System Verification (NEXT)
+- [ ] Connect `fitnex-fe` API client (`api.js`) to backend endpoints.
+- [ ] Ensure `AuthContext` maintains session tokens, rotation, and profile sync.
+- [ ] Connect `DataContext` to live `/exercises` and `/exercises/facets`.
 - [ ] Connect `WorkoutContext` to `/workouts` and `/history`.
 - [ ] Connect `Plans.jsx` to `/plans` and `/plans/active`.
+- [ ] Connect `Nutrition.jsx` to `/meals` and `/meals/daily-summary`.
 - [ ] Full end-to-end regression validation.
 - **Status:** Pending

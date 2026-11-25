@@ -28,17 +28,20 @@
 | **Workouts & Plans** | Builder draft sync, routine loading, 9 plan schedules, program enrollment, continuous progression, cancellation | **52/52 Passed** | Nov 25, 2026 |
 | **Master Audit** | Full audit across phases 1–4 with settings and password change | **46/46 Passed** | Nov 25, 2026 |
 | **History & Analytics** | Session logging, volume calculation, PR detection, streak engine, dashboard summary | **33/33 Passed** | Nov 25, 2026 |
+| **Phase 6 Nutrition** | 52 recipes, 7 categories, favorite toggling, food logging, daily summary vs targets | **12/12 Passed** | Nov 25, 2026 |
+| **Full Repo Regression**| Cross-module end-to-end integration across all Phases 1–6 | **12/12 Passed** | Nov 25, 2026 |
 
 ---
 
 ## 3. Git Repository Tracking
 
 - **Backend Repository:** `https://github.com/Ahmar72/fitnex-be.git` (Branch: `main`)
-  - Latest Commit: `c74ff70` ("Register Workouts and Plans modules in root application")
-  - Clean working directory, all changes pushed.
+  - Latest Commit: `d2b9989` ("merge: integrate Phase 6 nutrition and meal planner module")
+  - Feature Branch: `feature/phase-6-nutrition-meals` merged and pushed.
+  - Clean working directory, all changes pushed to GitHub.
 - **Frontend Repository:** `https://github.com/Ahmar72/fitnex-fe.git` (Branch: `main`)
   - Latest Commit: `6ed79eb` ("Add email verification, forgot password, and reset password views")
-  - Clean working directory, all changes pushed.
+  - Clean working directory, all changes pushed to GitHub.
 
 ---
 
@@ -52,3 +55,6 @@
   - JWT Access Secret configured with 15-minute expiration.
   - JWT Refresh Secret configured with 7-day rotation.
   - Sensitive user fields guarded with `select: false`.
+- **Pre-Configured Accounts:**
+  - Athlete Account: `athlete@fitnex.com` / `Password123!`
+  - Admin/Personal Account: `ahmar@123.com` (and `ahmer@123.com`) / `Password123!`
