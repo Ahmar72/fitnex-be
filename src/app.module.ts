@@ -13,6 +13,7 @@ import { WorkoutsModule } from './modules/workouts/workouts.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { HistoryModule } from './modules/history/history.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { NutritionModule } from './modules/nutrition/nutrition.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 /**
@@ -46,6 +47,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     PlansModule,
     HistoryModule,
     DashboardModule,
+    NutritionModule,
   ],
   providers: [
     // Enable JWT guard globally: all routes require token unless marked @Public()
