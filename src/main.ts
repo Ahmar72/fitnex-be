@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -12,15 +15,27 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
  * 
  * Initializes NestJS with Swagger OpenAPI documentation, CORS,
  * global validation pipes, standardized response interceptors,
- * and exception filters.
+ * exception filters, and static assets serving for images.
  */
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port', 5000);
   const apiPrefix = configService.get<string>('apiPrefix', 'api/v1');
+
+  // Serve Static Assets (images for plans, nutrition, exercises, goals, auth)
+  const publicDir = existsSync(join(process.cwd(), 'public'))
+    ? join(process.cwd(), 'public')
+    : join(__dirname, '..', 'public');
+
+  if (existsSync(publicDir)) {
+    app.useStaticAssets(publicDir, {
+      prefix: '/',
+    });
+    logger.log(`📁 Static assets served from: ${publicDir}`);
+  }
 
   // Configure Global API Route Prefix (e.g. /api/v1)
   app.setGlobalPrefix(apiPrefix);
