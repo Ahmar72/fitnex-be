@@ -6,7 +6,8 @@ export type ExerciseFavoriteDocument = HydratedDocument<ExerciseFavorite>;
 /**
  * Exercise Favorite Mongoose Schema
  * 
- * Records an individual user's bookmark/favorite relationship with an exercise.
+ * Records an individual user's bookmark/favorite relationship with an exercise,
+ * referencing the exercise's canonical MongoDB ObjectId.
  */
 @Schema({
   collection: 'exercise_favorites',
@@ -14,6 +15,7 @@ export type ExerciseFavoriteDocument = HydratedDocument<ExerciseFavorite>;
   toJSON: {
     transform: (_, ret: any) => {
       ret.id = ret._id.toString();
+      ret.exerciseId = ret.exerciseId?.toString() || ret.exerciseId;
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -24,8 +26,8 @@ export class ExerciseFavorite extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
-  @Prop({ required: true, index: true })
-  exerciseId: string;
+  @Prop({ type: Types.ObjectId, ref: 'Exercise', required: true, index: true })
+  exerciseId: Types.ObjectId;
 }
 
 export const ExerciseFavoriteSchema = SchemaFactory.createForClass(ExerciseFavorite);

@@ -10,6 +10,10 @@ import {
   PersonalRecord,
   PersonalRecordSchema,
 } from './schemas/personal-record.schema';
+import {
+  WorkoutSessionExercise,
+  WorkoutSessionExerciseSchema,
+} from './schemas/workout-session-exercise.schema';
 import { ExercisesModule } from '../exercises/exercises.module';
 
 /**
@@ -22,6 +26,7 @@ import { ExercisesModule } from '../exercises/exercises.module';
     MongooseModule.forFeature([
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: PersonalRecord.name, schema: PersonalRecordSchema },
+      { name: WorkoutSessionExercise.name, schema: WorkoutSessionExerciseSchema },
     ]),
     ExercisesModule,
   ],

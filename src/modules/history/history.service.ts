@@ -10,6 +10,10 @@ import {
   PersonalRecordDocument,
 } from './schemas/personal-record.schema';
 import {
+  WorkoutSessionExercise,
+  WorkoutSessionExerciseDocument,
+} from './schemas/workout-session-exercise.schema';
+import {
   CreateWorkoutSessionDto,
   HistoryQueryDto,
 } from './dto/create-session.dto';
@@ -20,6 +24,7 @@ import { ExercisesService } from '../exercises/exercises.service';
  * 
  * Manages workout completion logging, personal record (PR) detection,
  * consecutive training streak calculation, and volume analytics.
+ * Synchronizes sessions with normalized workout_session_exercises records.
  */
 @Injectable()
 export class HistoryService {
@@ -30,6 +35,8 @@ export class HistoryService {
     public readonly sessionModel: Model<WorkoutSessionDocument>,
     @InjectModel(PersonalRecord.name)
     public readonly prModel: Model<PersonalRecordDocument>,
+    @InjectModel(WorkoutSessionExercise.name)
+    public readonly sessionExerciseModel: Model<WorkoutSessionExerciseDocument>,
     private readonly exercisesService: ExercisesService,
   ) {}
 
@@ -60,8 +67,9 @@ export class HistoryService {
     const userObjId = new Types.ObjectId(userId);
     const dateKey = dto.dateKey || this.formatDateKey();
     const trainedTargetsSet = new Set<string>();
-    const exerciseIdsList: string[] = [];
+    const exerciseIdsList: Types.ObjectId[] = [];
     const exerciseSnapshots = [];
+    const sessionExerciseDocs: any[] = [];
 
     let totalVolumeKg = 0;
     let completedSetsCount = 0;
@@ -69,16 +77,15 @@ export class HistoryService {
     let totalPrsCount = 0;
 
     for (const exDto of dto.exercises) {
-      exerciseIdsList.push(exDto.exerciseId);
-
-      // Fetch exercise metadata
       let exName = exDto.name || 'Exercise';
       let exBodyPart = '';
       let exTarget = '';
+      let exObjId: Types.ObjectId | null = null;
 
       try {
         const exMeta = await this.exercisesService.findById(exDto.exerciseId);
         if (exMeta) {
+          exObjId = exMeta._id as Types.ObjectId;
           exName = exMeta.name;
           exBodyPart = exMeta.bodyPart || '';
           exTarget = exMeta.target || '';
@@ -86,19 +93,26 @@ export class HistoryService {
           if (exBodyPart) trainedTargetsSet.add(exBodyPart);
         }
       } catch {
-        /* fallback to provided name */
+        if (Types.ObjectId.isValid(exDto.exerciseId)) {
+          exObjId = new Types.ObjectId(exDto.exerciseId);
+        }
+      }
+
+      if (exObjId) {
+        exerciseIdsList.push(exObjId);
       }
 
       // Fetch existing PR for this exercise
-      const existingPR = await this.prModel
-        .findOne({ userId: userObjId, exerciseId: exDto.exerciseId })
-        .exec();
+      const prQuery = exObjId ? { userId: userObjId, exerciseId: exObjId } : null;
+      const existingPR = prQuery ? await this.prModel.findOne(prQuery).exec() : null;
 
       let currentMaxWeight = existingPR ? existingPR.maxWeight : 0;
       let currentMaxVolume = existingPR ? existingPR.maxVolume : 0;
       let bestReps = existingPR ? existingPR.repsAtMaxWeight : 1;
       let isExercisePR = false;
       let exerciseVolume = 0;
+      let exerciseReps = 0;
+      let maxSetWeight = 0;
 
       const processedSets = [];
       let setNum = 1;
@@ -109,9 +123,11 @@ export class HistoryService {
         const setVolume = weight * reps;
 
         exerciseVolume += setVolume;
+        exerciseReps += reps;
         totalVolumeKg += setVolume;
         completedSetsCount += 1;
         completedRepsCount += reps;
+        if (weight > maxSetWeight) maxSetWeight = weight;
 
         let isSetPR = false;
         // PR condition: strictly heavier weight than previous best (and > 0)
@@ -131,29 +147,46 @@ export class HistoryService {
         });
       }
 
+      const canonicalId = exObjId ? exObjId.toString() : exDto.exerciseId;
+
       exerciseSnapshots.push({
-        exerciseId: exDto.exerciseId,
+        exerciseId: canonicalId,
         name: exName,
         bodyPart: exBodyPart,
         target: exTarget,
         sets: processedSets,
       });
 
-      // Update PR document if personal best was achieved
-      if (isExercisePR || exerciseVolume > currentMaxVolume) {
-        await this.prModel.findOneAndUpdate(
-          { userId: userObjId, exerciseId: exDto.exerciseId },
-          {
-            $set: {
-              exerciseName: exName,
-              maxWeight: currentMaxWeight,
-              maxVolume: Math.max(currentMaxVolume, exerciseVolume),
-              repsAtMaxWeight: bestReps,
-              achievedAt: new Date(),
+      if (exObjId) {
+        sessionExerciseDocs.push({
+          userId: userObjId,
+          exerciseId: exObjId,
+          exerciseName: exName,
+          bodyPart: exBodyPart,
+          target: exTarget,
+          setsCount: processedSets.length,
+          completedReps: exerciseReps,
+          totalVolumeKg: Math.round(exerciseVolume * 10) / 10,
+          maxWeight: maxSetWeight,
+          sets: processedSets,
+        });
+
+        // Update PR document if personal best was achieved
+        if (isExercisePR || exerciseVolume > currentMaxVolume) {
+          await this.prModel.findOneAndUpdate(
+            { userId: userObjId, exerciseId: exObjId },
+            {
+              $set: {
+                exerciseName: exName,
+                maxWeight: currentMaxWeight,
+                maxVolume: Math.max(currentMaxVolume, exerciseVolume),
+                repsAtMaxWeight: bestReps,
+                achievedAt: new Date(),
+              },
             },
-          },
-          { upsert: true, new: true },
-        );
+            { upsert: true, new: true },
+          );
+        }
       }
     }
 
@@ -172,6 +205,17 @@ export class HistoryService {
       exerciseSnapshots,
       completedAt: new Date(),
     });
+
+    // Populate normalized workout_session_exercises records
+    if (sessionExerciseDocs.length) {
+      const withSessionId = sessionExerciseDocs.map((doc) => ({
+        ...doc,
+        sessionId: session._id,
+        createdAt: session.completedAt,
+        updatedAt: session.completedAt,
+      }));
+      await this.sessionExerciseModel.insertMany(withSessionId);
+    }
 
     return {
       message: 'Workout session logged successfully!',
@@ -233,12 +277,10 @@ export class HistoryService {
     let streak = 0;
     const checkDate = new Date();
 
-    // If today is not in set, check if yesterday was logged
     if (!datesSet.has(this.formatDateKey(checkDate))) {
       checkDate.setDate(checkDate.getDate() - 1);
     }
 
-    // Count backward consecutive days
     while (datesSet.has(this.formatDateKey(checkDate))) {
       streak += 1;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -264,9 +306,8 @@ export class HistoryService {
   async getWeeklyVolume(userId: string): Promise<{ weeklyVolumeKg: number; workoutsThisWeek: number }> {
     const userObjId = new Types.ObjectId(userId);
 
-    // Monday of current week
     const now = new Date();
-    const dayOfWeek = (now.getDay() + 6) % 7; // 0 is Monday
+    const dayOfWeek = (now.getDay() + 6) % 7;
     const monday = new Date(now);
     monday.setDate(now.getDate() - dayOfWeek);
     monday.setHours(0, 0, 0, 0);

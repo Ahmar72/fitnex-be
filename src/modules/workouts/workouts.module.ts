@@ -3,6 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { WorkoutsController } from './workouts.controller';
 import { WorkoutsService } from './workouts.service';
 import { Workout, WorkoutSchema } from './schemas/workout.schema';
+import {
+  WorkoutItemEntity,
+  WorkoutItemEntitySchema,
+} from './schemas/workout-item-entity.schema';
 import { ExercisesModule } from '../exercises/exercises.module';
 
 /**
@@ -12,7 +16,10 @@ import { ExercisesModule } from '../exercises/exercises.module';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Workout.name, schema: WorkoutSchema }]),
+    MongooseModule.forFeature([
+      { name: Workout.name, schema: WorkoutSchema },
+      { name: WorkoutItemEntity.name, schema: WorkoutItemEntitySchema },
+    ]),
     ExercisesModule,
   ],
   controllers: [WorkoutsController],

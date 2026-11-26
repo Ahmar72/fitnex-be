@@ -25,18 +25,44 @@ import { ExerciseFacetsDto } from './dto/facets-response.dto';
  * 
  * Manages the 1,324 movement catalog, facets aggregation, localized instructions,
  * and user bookmarking/favorites. Automatically seeds datasets on startup.
+ * Uses canonical MongoDB _id as the sole identifier throughout the platform.
  */
 @Injectable()
 export class ExercisesService implements OnModuleInit {
   private readonly logger = new Logger(ExercisesService.name);
   private cachedFacets: ExerciseFacetsDto | null = null;
+  private readonly legacyMap: Map<string, string> = new Map();
 
   constructor(
     @InjectModel(Exercise.name)
     public readonly exerciseModel: Model<ExerciseDocument>,
     @InjectModel(ExerciseFavorite.name)
     public readonly favoriteModel: Model<ExerciseFavoriteDocument>,
-  ) {}
+  ) {
+    this.loadLegacyMap();
+  }
+
+  private loadLegacyMap() {
+    try {
+      const candidatePaths = [
+        path.resolve(process.cwd(), 'src/common/legacy-exercise-map.json'),
+        path.resolve(process.cwd(), 'dist/common/legacy-exercise-map.json'),
+        path.resolve(__dirname, '../../common/legacy-exercise-map.json'),
+        path.resolve(__dirname, '../../../src/common/legacy-exercise-map.json'),
+      ];
+      const mapPath = candidatePaths.find((p) => fs.existsSync(p));
+      if (mapPath) {
+        const raw = fs.readFileSync(mapPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        for (const [k, v] of Object.entries(parsed)) {
+          this.legacyMap.set(k, v as string);
+        }
+        this.logger.log(`Loaded ${this.legacyMap.size} legacy ID mappings from ${mapPath}`);
+      }
+    } catch (e: any) {
+      this.logger.warn(`Could not load legacy exercise map: ${e.message}`);
+    }
+  }
 
   /**
    * Automatically seed exercise data and multi-lingual steps on module initialization
@@ -95,15 +121,14 @@ export class ExercisesService implements OnModuleInit {
 
         bulkOps.push({
           updateOne: {
-            filter: { exerciseId: item.id },
+            filter: { name: item.name },
             update: {
               $set: {
-                exerciseId: item.id,
                 name: item.name,
                 bodyPart: (item.bodyPart || '').toLowerCase().trim(),
                 equipment: (item.equipment || '').toLowerCase().trim(),
                 target: (item.target || '').toLowerCase().trim(),
-                muscleGroup: item.muscleGroup || '',
+                muscleGroup: (item.muscleGroup || '').toLowerCase().trim(),
                 secondary: item.secondary || [],
                 image: item.image || '',
                 gif: item.gif || '',
@@ -118,7 +143,7 @@ export class ExercisesService implements OnModuleInit {
 
       if (bulkOps.length) {
         await this.exerciseModel.bulkWrite(bulkOps, { ordered: false });
-        this.cachedFacets = null; // Invalidate facets cache
+        this.cachedFacets = null;
         const finalCount = await this.exerciseModel.countDocuments().exec();
         this.logger.log(
           `Successfully seeded ${finalCount} exercises with localized step guides!`,
@@ -155,7 +180,7 @@ export class ExercisesService implements OnModuleInit {
     if (sort === ExerciseSortEnum.NAME_DESC) {
       sortOption.name = -1;
     } else {
-      sortOption.name = 1; // Default A-Z
+      sortOption.name = 1;
     }
 
     const skip = (page - 1) * limit;
@@ -166,7 +191,7 @@ export class ExercisesService implements OnModuleInit {
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
-        .select('-i18n') // Exclude heavy multi-lingual steps in list view for sub-20ms latency
+        .select('-i18n')
         .exec(),
       this.exerciseModel.countDocuments(query).exec(),
     ]);
@@ -218,21 +243,23 @@ export class ExercisesService implements OnModuleInit {
   }
 
   /**
-   * Retrieves single exercise details including full localized step guides
+   * Retrieves single exercise details including full localized step guides.
+   * Resolves by canonical MongoDB ObjectId with fallback support for legacy codes.
    */
   async findById(id: string): Promise<ExerciseDocument> {
-    const conditions: any[] = [{ exerciseId: id }];
     if (Types.ObjectId.isValid(id)) {
-      conditions.push({ _id: new Types.ObjectId(id) });
+      const exercise = await this.exerciseModel.findById(new Types.ObjectId(id)).exec();
+      if (exercise) return exercise;
     }
 
-    const exercise = await this.exerciseModel.findOne({ $or: conditions }).exec();
-
-    if (!exercise) {
-      throw new NotFoundException(`Exercise with ID "${id}" was not found`);
+    // Check if legacy code maps to an ObjectId
+    const fallbackId = this.legacyMap.get(id);
+    if (fallbackId && Types.ObjectId.isValid(fallbackId)) {
+      const exercise = await this.exerciseModel.findById(new Types.ObjectId(fallbackId)).exec();
+      if (exercise) return exercise;
     }
 
-    return exercise;
+    throw new NotFoundException(`Exercise with ID "${id}" was not found`);
   }
 
   /**
@@ -244,7 +271,7 @@ export class ExercisesService implements OnModuleInit {
       .select('exerciseId')
       .exec();
 
-    return favorites.map((f) => f.exerciseId);
+    return favorites.map((f) => f.exerciseId.toString());
   }
 
   /**
@@ -254,28 +281,29 @@ export class ExercisesService implements OnModuleInit {
     userId: string,
     exerciseId: string,
   ): Promise<{ exerciseId: string; isFavorited: boolean; message: string }> {
-    // Verify exercise exists
-    await this.findById(exerciseId);
+    // Verify exercise exists and get its canonical ObjectId
+    const exercise = await this.findById(exerciseId);
+    const exObjId = exercise._id as Types.ObjectId;
 
     const userObjId = new Types.ObjectId(userId);
     const existing = await this.favoriteModel
-      .findOne({ userId: userObjId, exerciseId })
+      .findOne({ userId: userObjId, exerciseId: exObjId })
       .exec();
 
     if (existing) {
       await this.favoriteModel.deleteOne({ _id: existing._id }).exec();
       return {
-        exerciseId,
+        exerciseId: exObjId.toString(),
         isFavorited: false,
         message: 'Exercise removed from favorites',
       };
     } else {
       await this.favoriteModel.create({
         userId: userObjId,
-        exerciseId,
+        exerciseId: exObjId,
       });
       return {
-        exerciseId,
+        exerciseId: exObjId.toString(),
         isFavorited: true,
         message: 'Exercise added to favorites',
       };

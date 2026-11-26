@@ -6,7 +6,8 @@ export type PersonalRecordDocument = HydratedDocument<PersonalRecord>;
 /**
  * Personal Record Mongoose Schema
  * 
- * Tracks all-time maximum single-set weight and maximum session volume per exercise per user.
+ * Tracks all-time maximum single-set weight and maximum session volume per exercise per user,
+ * referencing the exercise's canonical MongoDB ObjectId.
  */
 @Schema({
   collection: 'personal_records',
@@ -14,6 +15,7 @@ export type PersonalRecordDocument = HydratedDocument<PersonalRecord>;
   toJSON: {
     transform: (_, ret: any) => {
       ret.id = ret._id.toString();
+      ret.exerciseId = ret.exerciseId?.toString() || ret.exerciseId;
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -24,8 +26,8 @@ export class PersonalRecord extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
-  @Prop({ required: true, index: true })
-  exerciseId: string;
+  @Prop({ type: Types.ObjectId, ref: 'Exercise', required: true, index: true })
+  exerciseId: Types.ObjectId;
 
   @Prop({ required: true, trim: true })
   exerciseName: string;

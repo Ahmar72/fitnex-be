@@ -6,15 +6,15 @@ export type ExerciseDocument = HydratedDocument<Exercise>;
 /**
  * Exercise Mongoose Schema
  * 
- * Represents an exercise in the 1,324 movements catalog, including
- * muscle group classifications, equipment, animated assets, and multi-lingual steps.
+ * Represents an exercise in the 1,324 movements catalog, using MongoDB _id
+ * as the sole canonical identifier.
  */
 @Schema({
   collection: 'exercises',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {
-      ret.id = ret.exerciseId || ret._id.toString();
+      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -22,9 +22,6 @@ export type ExerciseDocument = HydratedDocument<Exercise>;
   },
 })
 export class Exercise extends Document {
-  @Prop({ required: true, unique: true, index: true })
-  exerciseId: string;
-
   @Prop({ required: true, index: true, trim: true })
   name: string;
 
