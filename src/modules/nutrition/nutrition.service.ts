@@ -9,16 +9,7 @@ import { Model, Types } from 'mongoose';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Meal, MealDocument } from './schemas/meal.schema';
-import {
-  UserMealFavorite,
-  UserMealFavoriteDocument,
-} from './schemas/user-meal-favorite.schema';
-import {
-  UserMealLog,
-  UserMealLogDocument,
-} from './schemas/user-meal-log.schema';
-import { FilterMealsDto, LogMealDto } from './dto/nutrition-dtos';
-import { OnboardingService } from '../onboarding/onboarding.service';
+import { FilterMealsDto } from './dto/nutrition-dtos';
 
 export const MEAL_CATEGORIES = [
   { key: 'all', label: 'All' },
@@ -31,10 +22,10 @@ export const MEAL_CATEGORIES = [
 ];
 
 /**
- * Nutrition & Meal Tracker Service
+ * Nutrition & Recipe Catalog Service
  * 
- * Manages the recipe catalog, user meal favorites, food logging,
- * and daily macronutrient and caloric progress tracking.
+ * Manages the recipe catalog, category discovery,
+ * and individual recipe details.
  */
 @Injectable()
 export class NutritionService implements OnModuleInit {
@@ -43,11 +34,6 @@ export class NutritionService implements OnModuleInit {
   constructor(
     @InjectModel(Meal.name)
     private readonly mealModel: Model<MealDocument>,
-    @InjectModel(UserMealFavorite.name)
-    private readonly userMealFavoriteModel: Model<UserMealFavoriteDocument>,
-    @InjectModel(UserMealLog.name)
-    private readonly userMealLogModel: Model<UserMealLogDocument>,
-    private readonly onboardingService: OnboardingService,
   ) {}
 
   /**
@@ -200,198 +186,5 @@ export class NutritionService implements OnModuleInit {
     }
 
     return meal;
-  }
-
-  /**
-   * Retrieves list of favorited meal IDs for user
-   */
-  async getFavorites(userId: string): Promise<string[]> {
-    const favorites = await this.userMealFavoriteModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .select('mealId')
-      .exec();
-
-    return favorites.map((f) => f.mealId);
-  }
-
-  /**
-   * Toggles bookmark / favorite for a meal recipe
-   */
-  async toggleFavorite(
-    userId: string,
-    mealId: string,
-  ): Promise<{ mealId: string; isFavorite: boolean; message: string }> {
-    const existing = await this.userMealFavoriteModel
-      .findOne({
-        userId: new Types.ObjectId(userId),
-        mealId,
-      })
-      .exec();
-
-    if (existing) {
-      await this.userMealFavoriteModel.deleteOne({ _id: existing._id }).exec();
-      return {
-        mealId,
-        isFavorite: false,
-        message: 'Recipe removed from your favorites.',
-      };
-    }
-
-    await this.userMealFavoriteModel.create({
-      userId: new Types.ObjectId(userId),
-      mealId,
-    });
-
-    return {
-      mealId,
-      isFavorite: true,
-      message: 'Recipe saved to your favorites.',
-    };
-  }
-
-  /**
-   * Logs a meal consumed by the user
-   */
-  async logMeal(userId: string, dto: LogMealDto): Promise<UserMealLogDocument> {
-    const servings = Math.max(0.1, Number(dto.servings) || 1);
-    const dateKey = dto.dateKey || new Date().toISOString().split('T')[0];
-
-    let name = dto.name;
-    let category = dto.category || 'snack';
-    let calories = Number(dto.calories);
-    let protein = Number(dto.protein);
-    let carbs = Number(dto.carbs);
-    let fat = Number(dto.fat);
-
-    // If mealId is provided and macros were omitted or 0, load from catalog
-    if (dto.mealId && (!calories || isNaN(calories))) {
-      try {
-        const recipe = await this.findById(dto.mealId);
-        name = name || recipe.name;
-        category = category || recipe.category;
-        calories = Math.round(recipe.macros.calories * servings);
-        protein = Math.round(recipe.macros.protein * servings);
-        carbs = Math.round(recipe.macros.carbs * servings);
-        fat = Math.round(recipe.macros.fat * servings);
-      } catch (err) {
-        // Fall back to provided values
-      }
-    }
-
-    const created = await this.userMealLogModel.create({
-      userId: new Types.ObjectId(userId),
-      mealId: dto.mealId || null,
-      name: name || 'Logged Meal',
-      category: category || 'snack',
-      dateKey,
-      calories: Math.round((calories || 0) * (dto.mealId && calories ? 1 : servings)),
-      protein: Math.round((protein || 0) * (dto.mealId && protein ? 1 : servings)),
-      carbs: Math.round((carbs || 0) * (dto.mealId && carbs ? 1 : servings)),
-      fat: Math.round((fat || 0) * (dto.mealId && fat ? 1 : servings)),
-      servings,
-      loggedAt: new Date(),
-    });
-
-    return created;
-  }
-
-  /**
-   * Retrieves meal logs for a specific user and date
-   */
-  async getLogs(userId: string, dateKey?: string): Promise<UserMealLogDocument[]> {
-    const targetDate = dateKey || new Date().toISOString().split('T')[0];
-    return this.userMealLogModel
-      .find({
-        userId: new Types.ObjectId(userId),
-        dateKey: targetDate,
-      })
-      .sort({ loggedAt: -1 })
-      .exec();
-  }
-
-  /**
-   * Deletes a user meal log entry
-   */
-  async deleteLog(userId: string, logId: string): Promise<{ success: boolean; message: string }> {
-    if (!Types.ObjectId.isValid(logId)) {
-      throw new NotFoundException('Invalid log ID.');
-    }
-
-    const result = await this.userMealLogModel
-      .deleteOne({
-        _id: new Types.ObjectId(logId),
-        userId: new Types.ObjectId(userId),
-      })
-      .exec();
-
-    if (result.deletedCount === 0) {
-      throw new NotFoundException('Meal log entry not found or unauthorized.');
-    }
-
-    return {
-      success: true,
-      message: 'Meal entry successfully removed.',
-    };
-  }
-
-  /**
-   * Calculates daily consumed macros vs metabolic targets
-   */
-  async getDailySummary(userId: string, dateKey?: string) {
-    const targetDate = dateKey || new Date().toISOString().split('T')[0];
-
-    const logs = await this.getLogs(userId, targetDate);
-
-    const consumed = {
-      calories: logs.reduce((sum, log) => sum + (log.calories || 0), 0),
-      protein: logs.reduce((sum, log) => sum + (log.protein || 0), 0),
-      carbs: logs.reduce((sum, log) => sum + (log.carbs || 0), 0),
-      fat: logs.reduce((sum, log) => sum + (log.fat || 0), 0),
-    };
-
-    // Retrieve onboarding metabolic targets
-    let targets = {
-      calories: 2200,
-      protein: 150,
-      carbs: 250,
-      fat: 65,
-    };
-
-    try {
-      const profile = await this.onboardingService.getProfile(userId);
-      if (profile) {
-        targets = {
-          calories: profile.targetCalories || 2200,
-          protein: profile.targetProteinGrams || 150,
-          carbs: profile.targetCarbsGrams || 250,
-          fat: profile.targetFatGrams || 65,
-        };
-      }
-    } catch {
-      // Default fallback when user hasn't finished onboarding yet
-    }
-
-    const remaining = {
-      calories: Math.max(0, targets.calories - consumed.calories),
-      protein: Math.max(0, targets.protein - consumed.protein),
-      carbs: Math.max(0, targets.carbs - consumed.carbs),
-      fat: Math.max(0, targets.fat - consumed.fat),
-    };
-
-    const percentage = {
-      calories: Math.min(100, Math.round((consumed.calories / (targets.calories || 1)) * 100)),
-      protein: Math.min(100, Math.round((consumed.protein / (targets.protein || 1)) * 100)),
-      carbs: Math.min(100, Math.round((consumed.carbs / (targets.carbs || 1)) * 100)),
-      fat: Math.min(100, Math.round((consumed.fat / (targets.fat || 1)) * 100)),
-    };
-
-    return {
-      dateKey: targetDate,
-      consumed,
-      targets,
-      remaining,
-      percentage,
-      logsCount: logs.length,
-    };
   }
 }

@@ -1,9 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsInt,
-  IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -55,65 +53,4 @@ export class FilterMealsDto {
   @IsInt()
   @Min(1)
   limit?: number = 20;
-}
-
-export class LogMealDto {
-  @ApiPropertyOptional({
-    example: 'grilled-chicken-rice',
-    description: 'Meal recipe ID from catalog (if logging a known recipe)',
-  })
-  @IsOptional()
-  @IsString()
-  mealId?: string;
-
-  @ApiProperty({
-    example: 'Grilled Chicken & Brown Rice',
-    description: 'Meal name',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiPropertyOptional({
-    example: 'lunch',
-    default: 'lunch',
-    description: 'Meal type category (breakfast, lunch, dinner, snack, pre-workout, post-workout)',
-  })
-  @IsOptional()
-  @IsString()
-  category?: string;
-
-  @ApiPropertyOptional({
-    example: '2026-11-25',
-    description: 'Date key (YYYY-MM-DD)',
-  })
-  @IsOptional()
-  @IsString()
-  dateKey?: string;
-
-  @ApiProperty({ example: 540, description: 'Calories in kcal' })
-  @IsNumber()
-  @Min(0)
-  calories: number;
-
-  @ApiProperty({ example: 48, description: 'Protein in grams' })
-  @IsNumber()
-  @Min(0)
-  protein: number;
-
-  @ApiProperty({ example: 52, description: 'Carbohydrates in grams' })
-  @IsNumber()
-  @Min(0)
-  carbs: number;
-
-  @ApiProperty({ example: 10, description: 'Fat in grams' })
-  @IsNumber()
-  @Min(0)
-  fat: number;
-
-  @ApiPropertyOptional({ example: 1, default: 1, description: 'Number of servings' })
-  @IsOptional()
-  @IsNumber()
-  @Min(0.1)
-  servings?: number;
 }
