@@ -36,16 +36,29 @@ export class SaveOnboardingDto extends CalculateCaloriesDto {
   @IsEnum(ExperienceLevelEnum)
   level: ExperienceLevelEnum;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 3,
     description: 'Target training days per week',
     minimum: 1,
     maximum: 7,
   })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(7)
-  daysPerWeek: number;
+  daysPerWeek?: number;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Target training days per week (alias)',
+    minimum: 1,
+    maximum: 7,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  days?: number;
 
   @ApiPropertyOptional({
     example: 'muscle-building',

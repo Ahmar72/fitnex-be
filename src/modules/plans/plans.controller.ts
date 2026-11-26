@@ -138,6 +138,19 @@ export class PlansController {
     return this.plansService.cancel(userId);
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Post('cancel/me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel active plan enrollment (alias)',
+    description: 'Deactivates the current active program enrollment for the user.',
+  })
+  async cancelMe(@CurrentUser() user: any) {
+    const userId = user?.id || user?._id?.toString() || user;
+    return this.plansService.cancel(userId);
+  }
+
   @Public()
   @Get(':id')
   @ApiOperation({

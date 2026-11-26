@@ -185,9 +185,15 @@ export class PlansService implements OnModuleInit {
     }
 
     const plan = await this.planModel.findOne({ planId: active.planId }).exec();
+    const enrollmentJson = active.toJSON() as any;
 
     return {
-      enrollment: active.toJSON(),
+      ...enrollmentJson,
+      planId: active.planId,
+      planName: plan?.name || active.planId,
+      daysPerWeek: active.daysPerWeek || 3,
+      startedAt: active.enrolledAt,
+      enrollment: enrollmentJson,
       plan: plan ? plan.toJSON() : null,
     };
   }
@@ -219,9 +225,15 @@ export class PlansService implements OnModuleInit {
       isActive: true,
     });
 
+    const enrollmentJson = enrollment.toJSON() as any;
     return {
       message: `Enrolled in "${plan.name}" successfully`,
-      enrollment: enrollment.toJSON(),
+      ...enrollmentJson,
+      planId: plan.planId,
+      planName: plan.name,
+      daysPerWeek: enrollment.daysPerWeek,
+      startedAt: enrollment.enrolledAt,
+      enrollment: enrollmentJson,
       plan: plan.toJSON(),
     };
   }

@@ -51,9 +51,10 @@ export class CalculateCaloriesDto {
   @Max(500)
   weight: number;
 
-  @ApiProperty({ enum: WeightUnitEnum, example: WeightUnitEnum.KG, description: 'Weight unit (kg or lbs)' })
+  @ApiPropertyOptional({ enum: WeightUnitEnum, example: WeightUnitEnum.KG, description: 'Weight unit (kg or lbs)', default: WeightUnitEnum.KG })
+  @IsOptional()
   @IsEnum(WeightUnitEnum)
-  weightUnit: WeightUnitEnum;
+  weightUnit?: WeightUnitEnum;
 
   @ApiProperty({ example: 170, description: 'Height value (cm if cm, or total inches/raw if ft)' })
   @IsNumber()
@@ -61,9 +62,10 @@ export class CalculateCaloriesDto {
   @Max(300)
   height: number;
 
-  @ApiProperty({ enum: HeightUnitEnum, example: HeightUnitEnum.CM, description: 'Height unit (cm or ft)' })
+  @ApiPropertyOptional({ enum: HeightUnitEnum, example: HeightUnitEnum.CM, description: 'Height unit (cm or ft)', default: HeightUnitEnum.CM })
+  @IsOptional()
   @IsEnum(HeightUnitEnum)
-  heightUnit: HeightUnitEnum;
+  heightUnit?: HeightUnitEnum;
 
   @ApiPropertyOptional({ example: 5, description: 'Feet part when heightUnit is ft' })
   @IsOptional()
