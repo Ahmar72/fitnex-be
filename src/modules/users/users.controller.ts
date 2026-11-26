@@ -82,6 +82,27 @@ export class UsersController {
     };
   }
 
+  @Patch('me/settings')
+  @ApiOperation({
+    summary: 'Update current user settings',
+    description: 'Updates application settings including rest timer duration.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Settings updated successfully',
+  })
+  async updateMeSettings(
+    @CurrentUser() user: any,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = user?.id || user?._id?.toString() || user;
+    const updatedUser = await this.usersService.update(userId, updateUserDto);
+    return {
+      message: 'Settings updated successfully',
+      data: updatedUser,
+    };
+  }
+
   @Patch('profile')
   @ApiOperation({
     summary: 'Update current user profile (alias for /me/profile)',
