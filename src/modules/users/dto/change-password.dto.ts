@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 /**
  * Change Password DTO
@@ -7,13 +7,21 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
  * Requires current password verification before updating account password.
  */
 export class ChangePasswordDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'OldPassword123!',
     description: 'Existing account password',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Current password is required' })
-  oldPassword: string;
+  oldPassword?: string;
+
+  @ApiPropertyOptional({
+    example: 'OldPassword123!',
+    description: 'Existing account password (alias)',
+  })
+  @IsOptional()
+  @IsString()
+  currentPassword?: string;
 
   @ApiProperty({
     example: 'NewSecretPass456!',

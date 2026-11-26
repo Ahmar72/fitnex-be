@@ -113,7 +113,7 @@ export class OnboardingService {
       userId: new Types.ObjectId(userId),
       goal: dto.goal,
       level: dto.level,
-      daysPerWeek: dto.daysPerWeek,
+      daysPerWeek: dto.daysPerWeek || dto.days || 3,
       planId: dto.planId || `${dto.goal}-starter`,
       age: dto.age,
       sex: dto.sex,

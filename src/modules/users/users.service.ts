@@ -96,7 +96,12 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${userId}" was not found`);
     }
 
-    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    const providedOldPassword = dto.oldPassword || dto.currentPassword;
+    if (!providedOldPassword) {
+      throw new BadRequestException('Current password is required');
+    }
+
+    const isMatch = await bcrypt.compare(providedOldPassword, user.password);
     if (!isMatch) {
       throw new BadRequestException('Current password does not match');
     }
