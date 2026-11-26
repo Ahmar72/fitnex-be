@@ -9,6 +9,7 @@ export type ExerciseFavoriteDocument = HydratedDocument<ExerciseFavorite>;
  * Records an individual user's bookmark/favorite relationship with an exercise.
  */
 @Schema({
+  collection: 'exercise_favorites',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

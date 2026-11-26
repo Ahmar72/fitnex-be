@@ -45,6 +45,7 @@ export const SessionExerciseSnapshotSchema = SchemaFactory.createForClass(Sessio
  * anatomical targets, and personal record detections.
  */
 @Schema({
+  collection: 'workout_sessions',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

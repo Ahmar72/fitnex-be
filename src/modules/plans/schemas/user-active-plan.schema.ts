@@ -10,6 +10,7 @@ export type UserActivePlanDocument = HydratedDocument<UserActivePlan>;
  * and workout completion dates.
  */
 @Schema({
+  collection: 'user_active_plans',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

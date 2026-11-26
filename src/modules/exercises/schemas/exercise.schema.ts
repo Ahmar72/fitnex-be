@@ -10,6 +10,7 @@ export type ExerciseDocument = HydratedDocument<Exercise>;
  * muscle group classifications, equipment, animated assets, and multi-lingual steps.
  */
 @Schema({
+  collection: 'exercises',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

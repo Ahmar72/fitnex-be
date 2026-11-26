@@ -38,6 +38,7 @@ export const WorkoutItemSchema = SchemaFactory.createForClass(WorkoutItem);
  * Represents an active builder workout draft or custom routine template.
  */
 @Schema({
+  collection: 'workouts',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

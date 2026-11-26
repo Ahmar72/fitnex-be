@@ -9,6 +9,7 @@ export type PersonalRecordDocument = HydratedDocument<PersonalRecord>;
  * Tracks all-time maximum single-set weight and maximum session volume per exercise per user.
  */
 @Schema({
+  collection: 'personal_records',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

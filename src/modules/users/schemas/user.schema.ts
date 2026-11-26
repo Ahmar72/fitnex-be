@@ -10,6 +10,7 @@ export type UserDocument = HydratedDocument<User>;
  * and security tokens. Sensitive fields are hidden from JSON transforms and queries.
  */
 @Schema({
+  collection: 'users',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

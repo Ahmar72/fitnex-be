@@ -9,6 +9,7 @@ export type UserMealLogDocument = HydratedDocument<UserMealLog>;
  * Tracks consumed meals, calories, and macronutrients against daily targets.
  */
 @Schema({
+  collection: 'user_meal_logs',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

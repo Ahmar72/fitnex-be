@@ -63,7 +63,7 @@
 - `steps`: Array of English instruction strings
 - `i18n`: Localized instruction dictionary (`ur`, `es`, `fr`, `de`, `it`, `tr`, `ru`, `pl`, `hi`, `zh`, `ko`)
 
-### 2.3 `exercisefavorites` Collection
+### 2.3 `exercise_favorites` Collection
 - `userId`: ObjectId (ref: `User`)
 - `exerciseId`: String
 - Unique index: `{ userId: 1, exerciseId: 1 }`
@@ -92,7 +92,7 @@
 - `overview`: Array of `{ label, value }`
 - `schedule`: Array of `{ day, title, focus, isRest, exerciseIds }`
 
-### 2.6 `useractiveplans` Collection
+### 2.6 `user_active_plans` Collection
 - `userId`: ObjectId (ref: `User`)
 - `planId`: String (ref: `Plan`)
 - `currentWeek`: Number (default `1`)
@@ -104,7 +104,7 @@
 - `completedAt`: Date (Nullable)
 - `isActive`: Boolean (default `true`)
 
-### 2.7 `workoutsessions` Collection (Phase 5)
+### 2.7 `workout_sessions` Collection
 - `userId`: ObjectId (ref: `User`, Indexed)
 - `planId`: String (Nullable)
 - `dateKey`: String (e.g. `'2026-11-25'`, Indexed)
@@ -118,5 +118,25 @@
 - `exerciseSnapshots`: JSON/Array of completed movements and sets
 - `completedAt`: Date
 
-### 2.8 `meals`, `usermeallogs`, `usermealfavorites` (Phase 6)
-- 28 meal recipes, daily meal logging against calorie/macro targets, and user favorites.
+### 2.8 `personal_records` Collection
+- `userId`: ObjectId (ref: `User`, Indexed)
+- `exerciseId`: String (Indexed)
+- `exerciseName`: String
+- `maxWeight`: Number
+- `maxVolume`: Number
+- `repsAtMaxWeight`: Number
+- `achievedAt`: Date
+
+### 2.9 `onboarding_profiles` Collection
+- `userId`: ObjectId (ref: `User`, Unique, Indexed)
+- `goal`: String (`muscle`, `fat`, `strength`, `fit`)
+- `level`: String (`beginner`, `intermediate`, `advanced`)
+- `daysPerWeek`: Number
+- `equipment`: String
+- `dietGoal`: String
+- `stats`: `{ age, sex, height, weight, activityLevel, bmr, tdee, targetCalories, macros }`
+
+### 2.10 `meals`, `user_meal_logs`, `user_meal_favorites` Collections
+- `meals`: 52 chef-curated macro-balanced recipes across 7 categories.
+- `user_meal_logs`: Daily meal logs with custom servings, calories, and macros.
+- `user_meal_favorites`: User bookmarked recipes.
