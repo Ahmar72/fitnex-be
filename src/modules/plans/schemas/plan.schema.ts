@@ -39,6 +39,7 @@ export const PlanDayScheduleSchema = SchemaFactory.createForClass(PlanDaySchedul
  * and weekly progression structures.
  */
 @Schema({
+  collection: 'plans',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

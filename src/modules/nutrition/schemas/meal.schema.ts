@@ -41,6 +41,7 @@ export const MealIngredientSchema = SchemaFactory.createForClass(MealIngredient)
  * Represents a chef-curated macro-calibrated recipe in the Fitnex nutrition library.
  */
 @Schema({
+  collection: 'meals',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

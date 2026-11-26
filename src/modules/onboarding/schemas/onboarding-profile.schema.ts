@@ -10,6 +10,7 @@ export type OnboardingProfileDocument = HydratedDocument<OnboardingProfile>;
  * calculated BMR, TDEE, and daily caloric and macronutrient targets.
  */
 @Schema({
+  collection: 'onboarding_profiles',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {

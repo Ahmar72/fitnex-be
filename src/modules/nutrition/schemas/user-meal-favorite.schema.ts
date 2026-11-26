@@ -9,6 +9,7 @@ export type UserMealFavoriteDocument = HydratedDocument<UserMealFavorite>;
  * Stores the bookmarked recipes for authenticated users.
  */
 @Schema({
+  collection: 'user_meal_favorites',
   timestamps: true,
   toJSON: {
     transform: (_, ret: any) => {
