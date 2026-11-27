@@ -9,6 +9,10 @@ import { Model, Types } from 'mongoose';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Meal, MealDocument } from './schemas/meal.schema';
+import {
+  MealIngredient,
+  MealIngredientDocument,
+} from './schemas/meal-ingredient.schema';
 import { FilterMealsDto } from './dto/nutrition-dtos';
 
 export const MEAL_CATEGORIES = [
@@ -34,6 +38,8 @@ export class NutritionService implements OnModuleInit {
   constructor(
     @InjectModel(Meal.name)
     private readonly mealModel: Model<MealDocument>,
+    @InjectModel(MealIngredient.name)
+    private readonly ingredientModel: Model<MealIngredientDocument>,
   ) {}
 
   /**
@@ -148,17 +154,19 @@ export class NutritionService implements OnModuleInit {
 
     let sortOption: Record<string, 1 | -1> = { name: 1 };
     if (filterDto.sort === 'calories_asc') {
-      sortOption = { 'macros.calories': 1 };
+      sortOption = { calories: 1 };
     } else if (filterDto.sort === 'calories_desc') {
-      sortOption = { 'macros.calories': -1 };
+      sortOption = { calories: -1 };
     } else if (filterDto.sort === 'protein_desc') {
-      sortOption = { 'macros.protein': -1 };
+      sortOption = { protein: -1 };
     }
 
-    const [meals, total] = await Promise.all([
+    const [mealDocs, total] = await Promise.all([
       this.mealModel.find(filter).sort(sortOption).skip(skip).limit(limit).exec(),
       this.mealModel.countDocuments(filter).exec(),
     ]);
+
+    const meals = await this.attachIngredients(mealDocs);
 
     return {
       meals,
@@ -170,9 +178,37 @@ export class NutritionService implements OnModuleInit {
   }
 
   /**
+   * Assembles normalized meal_ingredients onto meal documents
+   */
+  private async attachIngredients(meals: MealDocument[]): Promise<any[]> {
+    if (!meals.length) return [];
+    const mealIds = meals.map((m) => m._id);
+    const allIngs = await this.ingredientModel
+      .find({ mealId: { $in: mealIds } })
+      .sort({ order: 1 })
+      .exec();
+
+    const ingMap = new Map<string, any[]>();
+    for (const ing of allIngs) {
+      const k = ing.mealId.toString();
+      if (!ingMap.has(k)) ingMap.set(k, []);
+      ingMap.get(k)!.push({
+        name: ing.name,
+        weight: ing.weight,
+        unit: ing.unit,
+      });
+    }
+
+    return meals.map((m) => ({
+      ...m.toJSON(),
+      ingredients: ingMap.get(m._id.toString()) || [],
+    }));
+  }
+
+  /**
    * Retrieves single recipe by ID (mealId or _id)
    */
-  async findById(id: string): Promise<MealDocument> {
+  async findById(id: string): Promise<any> {
     let meal: MealDocument | null = null;
     if (Types.ObjectId.isValid(id)) {
       meal = await this.mealModel.findById(id).exec();
@@ -185,6 +221,7 @@ export class NutritionService implements OnModuleInit {
       throw new NotFoundException(`Recipe with ID "${id}" was not found.`);
     }
 
-    return meal;
+    const [assembled] = await this.attachIngredients([meal]);
+    return assembled;
   }
 }

@@ -3,42 +3,11 @@ import { Document, HydratedDocument } from 'mongoose';
 
 export type MealDocument = HydratedDocument<Meal>;
 
-@Schema({ _id: false })
-export class MealMacros {
-  @Prop({ required: true, default: 0, min: 0 })
-  calories: number;
-
-  @Prop({ required: true, default: 0, min: 0 })
-  protein: number;
-
-  @Prop({ required: true, default: 0, min: 0 })
-  carbs: number;
-
-  @Prop({ required: true, default: 0, min: 0 })
-  fat: number;
-
-  @Prop({ default: 0, min: 0 })
-  fiber: number;
-}
-export const MealMacrosSchema = SchemaFactory.createForClass(MealMacros);
-
-@Schema({ _id: false })
-export class MealIngredient {
-  @Prop({ required: true, trim: true })
-  name: string;
-
-  @Prop({ required: true, default: 0, min: 0 })
-  weight: number;
-
-  @Prop({ required: true, default: 'g', trim: true })
-  unit: string;
-}
-export const MealIngredientSchema = SchemaFactory.createForClass(MealIngredient);
-
 /**
  * Meal Recipe Mongoose Schema
- * 
- * Represents a chef-curated macro-calibrated recipe in the Fitnex nutrition library.
+ *
+ * Clean, flat meal document with top-level macro fields.
+ * Ingredients are stored in the normalized `meal_ingredients` collection.
  */
 @Schema({
   collection: 'meals',
@@ -46,6 +15,13 @@ export const MealIngredientSchema = SchemaFactory.createForClass(MealIngredient)
   toJSON: {
     transform: (_, ret: any) => {
       ret.id = ret.mealId || ret._id.toString();
+      ret.macros = {
+        calories: ret.calories ?? 0,
+        protein: ret.protein ?? 0,
+        carbs: ret.carbs ?? 0,
+        fat: ret.fat ?? 0,
+        fiber: ret.fiber ?? 0,
+      };
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -74,11 +50,20 @@ export class Meal extends Document {
   @Prop({ default: '' })
   image: string;
 
-  @Prop({ type: MealMacrosSchema, required: true })
-  macros: MealMacros;
+  @Prop({ required: true, default: 0, min: 0, index: true })
+  calories: number;
 
-  @Prop({ type: [MealIngredientSchema], default: [] })
-  ingredients: MealIngredient[];
+  @Prop({ required: true, default: 0, min: 0, index: true })
+  protein: number;
+
+  @Prop({ required: true, default: 0, min: 0 })
+  carbs: number;
+
+  @Prop({ required: true, default: 0, min: 0 })
+  fat: number;
+
+  @Prop({ default: 0, min: 0 })
+  fiber: number;
 
   @Prop({ default: 15, min: 1 })
   prepTime: number;

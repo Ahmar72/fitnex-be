@@ -7,6 +7,14 @@ import {
   UserActivePlan,
   UserActivePlanSchema,
 } from './schemas/user-active-plan.schema';
+import {
+  PlanOverview,
+  PlanOverviewSchema,
+} from './schemas/plan-overview.schema';
+import {
+  PlanSchedule,
+  PlanScheduleSchema,
+} from './schemas/plan-schedule.schema';
 
 /**
  * Plans Module
@@ -18,6 +26,8 @@ import {
     MongooseModule.forFeature([
       { name: Plan.name, schema: PlanSchema },
       { name: UserActivePlan.name, schema: UserActivePlanSchema },
+      { name: PlanOverview.name, schema: PlanOverviewSchema },
+      { name: PlanSchedule.name, schema: PlanScheduleSchema },
     ]),
   ],
   controllers: [PlansController],

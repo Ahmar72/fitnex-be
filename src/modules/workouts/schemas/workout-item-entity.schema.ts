@@ -1,14 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument, Types } from 'mongoose';
-import { WorkoutSet, WorkoutSetSchema } from './workout.schema';
 
 export type WorkoutItemEntityDocument = HydratedDocument<WorkoutItemEntity>;
 
 /**
  * Workout Item Mongoose Schema
- * 
- * Normalized collection representing an exercise item configured
- * within a user's workout draft or routine template.
+ *
+ * Normalized flat collection representing an exercise item configured
+ * within a user's workout draft. Sets live in `workout_item_sets`.
  */
 @Schema({
   collection: 'workout_items',
@@ -35,10 +34,9 @@ export class WorkoutItemEntity extends Document {
   @Prop({ required: true })
   uid: string;
 
-  @Prop({ type: [WorkoutSetSchema], default: [] })
-  sets: WorkoutSet[];
+  @Prop({ default: 0 })
+  order: number;
 }
 
 export const WorkoutItemEntitySchema = SchemaFactory.createForClass(WorkoutItemEntity);
-WorkoutItemEntitySchema.index({ workoutId: 1, exerciseId: 1 });
-WorkoutItemEntitySchema.index({ userId: 1 });
+WorkoutItemEntitySchema.index({ workoutId: 1, order: 1 });

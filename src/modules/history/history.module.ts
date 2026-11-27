@@ -14,6 +14,10 @@ import {
   WorkoutSessionExercise,
   WorkoutSessionExerciseSchema,
 } from './schemas/workout-session-exercise.schema';
+import {
+  WorkoutSessionSet,
+  WorkoutSessionSetSchema,
+} from './schemas/workout-session-set.schema';
 import { ExercisesModule } from '../exercises/exercises.module';
 
 /**
@@ -27,6 +31,7 @@ import { ExercisesModule } from '../exercises/exercises.module';
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: PersonalRecord.name, schema: PersonalRecordSchema },
       { name: WorkoutSessionExercise.name, schema: WorkoutSessionExerciseSchema },
+      { name: WorkoutSessionSet.name, schema: WorkoutSessionSetSchema },
     ]),
     ExercisesModule,
   ],

@@ -3,46 +3,11 @@ import { Document, HydratedDocument, Types } from 'mongoose';
 
 export type WorkoutSessionDocument = HydratedDocument<WorkoutSession>;
 
-@Schema({ _id: false })
-export class SessionSet {
-  @Prop({ required: true, default: 1 })
-  setNumber: number;
-
-  @Prop({ required: true, min: 1 })
-  reps: number;
-
-  @Prop({ required: true, min: 0 })
-  weight: number;
-
-  @Prop({ default: false })
-  isPR: boolean;
-}
-export const SessionSetSchema = SchemaFactory.createForClass(SessionSet);
-
-@Schema({ _id: false })
-export class SessionExerciseSnapshot {
-  @Prop({ required: true, index: true })
-  exerciseId: string;
-
-  @Prop({ required: true, trim: true })
-  name: string;
-
-  @Prop({ default: '' })
-  bodyPart: string;
-
-  @Prop({ default: '' })
-  target: string;
-
-  @Prop({ type: [SessionSetSchema], default: [] })
-  sets: SessionSet[];
-}
-export const SessionExerciseSnapshotSchema = SchemaFactory.createForClass(SessionExerciseSnapshot);
-
 /**
  * Workout Session Mongoose Schema
- * 
- * Records completed live workout sessions with volume metrics, completed sets/reps,
- * anatomical targets, and personal record detections.
+ *
+ * Clean, flat session summary document. Exercise details and set logs are
+ * normalized into `workout_session_exercises` and `workout_session_sets`.
  */
 @Schema({
   collection: 'workout_sessions',
@@ -87,11 +52,8 @@ export class WorkoutSession extends Document {
   @Prop({ type: [String], default: [] })
   trainedTargets: string[];
 
-  @Prop({ type: [String], default: [] })
-  exercises: string[];
-
-  @Prop({ type: [SessionExerciseSnapshotSchema], default: [] })
-  exerciseSnapshots: SessionExerciseSnapshot[];
+  @Prop({ type: [Types.ObjectId], ref: 'Exercise', default: [] })
+  exercises: Types.ObjectId[];
 
   @Prop({ default: () => new Date(), index: true })
   completedAt: Date;

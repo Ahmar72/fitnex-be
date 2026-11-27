@@ -7,6 +7,10 @@ import {
   ExerciseFavorite,
   ExerciseFavoriteSchema,
 } from './schemas/exercise-favorite.schema';
+import {
+  ExerciseTranslation,
+  ExerciseTranslationSchema,
+} from './schemas/exercise-translation.schema';
 
 /**
  * Exercises Module
@@ -19,6 +23,7 @@ import {
     MongooseModule.forFeature([
       { name: Exercise.name, schema: ExerciseSchema },
       { name: ExerciseFavorite.name, schema: ExerciseFavoriteSchema },
+      { name: ExerciseTranslation.name, schema: ExerciseTranslationSchema },
     ]),
   ],
   controllers: [ExercisesController],

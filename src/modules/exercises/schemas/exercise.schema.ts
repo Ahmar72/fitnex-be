@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { Document, HydratedDocument } from 'mongoose';
 
 export type ExerciseDocument = HydratedDocument<Exercise>;
 
 /**
  * Exercise Mongoose Schema
- * 
- * Represents an exercise in the 1,324 movements catalog, using MongoDB _id
- * as the sole canonical identifier.
+ *
+ * Clean, flat exercise document using MongoDB _id as the sole canonical identifier.
+ * Multi-lingual step translations are stored in `exercise_translations`.
  */
 @Schema({
   collection: 'exercises',
@@ -48,9 +48,6 @@ export class Exercise extends Document {
 
   @Prop({ type: [String], default: [] })
   steps: string[];
-
-  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
-  i18n: Record<string, string[]>;
 }
 
 export const ExerciseSchema = SchemaFactory.createForClass(Exercise);

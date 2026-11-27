@@ -14,6 +14,10 @@ import {
   WorkoutSessionExerciseDocument,
 } from './schemas/workout-session-exercise.schema';
 import {
+  WorkoutSessionSet,
+  WorkoutSessionSetDocument,
+} from './schemas/workout-session-set.schema';
+import {
   CreateWorkoutSessionDto,
   HistoryQueryDto,
 } from './dto/create-session.dto';
@@ -21,10 +25,11 @@ import { ExercisesService } from '../exercises/exercises.service';
 
 /**
  * Workout History, PRs & Analytics Service
- * 
+ *
  * Manages workout completion logging, personal record (PR) detection,
  * consecutive training streak calculation, and volume analytics.
- * Synchronizes sessions with normalized workout_session_exercises records.
+ * Persists flat normalized records across `workout_sessions`,
+ * `workout_session_exercises`, and `workout_session_sets`.
  */
 @Injectable()
 export class HistoryService {
@@ -37,6 +42,8 @@ export class HistoryService {
     public readonly prModel: Model<PersonalRecordDocument>,
     @InjectModel(WorkoutSessionExercise.name)
     public readonly sessionExerciseModel: Model<WorkoutSessionExerciseDocument>,
+    @InjectModel(WorkoutSessionSet.name)
+    public readonly sessionSetModel: Model<WorkoutSessionSetDocument>,
     private readonly exercisesService: ExercisesService,
   ) {}
 
@@ -51,14 +58,13 @@ export class HistoryService {
   }
 
   /**
-   * Logs a completed workout session, evaluates PRs, and updates metrics
+   * Logs a completed workout session, evaluates PRs, and stores normalized exercise/set records
    */
   async logSession(userId: string, dto: CreateWorkoutSessionDto): Promise<any> {
     if (!dto.exercises || !dto.exercises.length) {
       throw new BadRequestException('Workout must include at least one completed exercise');
     }
 
-    // Verify all exercises have at least 1 completed set
     const emptyExercise = dto.exercises.find((e) => !e.sets || !e.sets.length);
     if (emptyExercise) {
       throw new BadRequestException('Each logged exercise must contain at least one completed set');
@@ -68,8 +74,10 @@ export class HistoryService {
     const dateKey = dto.dateKey || this.formatDateKey();
     const trainedTargetsSet = new Set<string>();
     const exerciseIdsList: Types.ObjectId[] = [];
-    const exerciseSnapshots = [];
-    const sessionExerciseDocs: any[] = [];
+    const preparedExercises: Array<{
+      doc: any;
+      sets: Array<{ setNumber: number; reps: number; weight: number; isPR: boolean }>;
+    }> = [];
 
     let totalVolumeKg = 0;
     let completedSetsCount = 0;
@@ -102,7 +110,6 @@ export class HistoryService {
         exerciseIdsList.push(exObjId);
       }
 
-      // Fetch existing PR for this exercise
       const prQuery = exObjId ? { userId: userObjId, exerciseId: exObjId } : null;
       const existingPR = prQuery ? await this.prModel.findOne(prQuery).exec() : null;
 
@@ -114,7 +121,7 @@ export class HistoryService {
       let exerciseReps = 0;
       let maxSetWeight = 0;
 
-      const processedSets = [];
+      const processedSets: Array<{ setNumber: number; reps: number; weight: number; isPR: boolean }> = [];
       let setNum = 1;
 
       for (const s of exDto.sets) {
@@ -130,7 +137,6 @@ export class HistoryService {
         if (weight > maxSetWeight) maxSetWeight = weight;
 
         let isSetPR = false;
-        // PR condition: strictly heavier weight than previous best (and > 0)
         if (weight > currentMaxWeight && weight > 0) {
           isSetPR = true;
           isExercisePR = true;
@@ -147,31 +153,22 @@ export class HistoryService {
         });
       }
 
-      const canonicalId = exObjId ? exObjId.toString() : exDto.exerciseId;
-
-      exerciseSnapshots.push({
-        exerciseId: canonicalId,
-        name: exName,
-        bodyPart: exBodyPart,
-        target: exTarget,
-        sets: processedSets,
-      });
-
       if (exObjId) {
-        sessionExerciseDocs.push({
-          userId: userObjId,
-          exerciseId: exObjId,
-          exerciseName: exName,
-          bodyPart: exBodyPart,
-          target: exTarget,
-          setsCount: processedSets.length,
-          completedReps: exerciseReps,
-          totalVolumeKg: Math.round(exerciseVolume * 10) / 10,
-          maxWeight: maxSetWeight,
+        preparedExercises.push({
+          doc: {
+            userId: userObjId,
+            exerciseId: exObjId,
+            exerciseName: exName,
+            bodyPart: exBodyPart,
+            target: exTarget,
+            setsCount: processedSets.length,
+            completedReps: exerciseReps,
+            totalVolumeKg: Math.round(exerciseVolume * 10) / 10,
+            maxWeight: maxSetWeight,
+          },
           sets: processedSets,
         });
 
-        // Update PR document if personal best was achieved
         if (isExercisePR || exerciseVolume > currentMaxVolume) {
           await this.prModel.findOneAndUpdate(
             { userId: userObjId, exerciseId: exObjId },
@@ -202,19 +199,38 @@ export class HistoryService {
       prsCount: totalPrsCount,
       trainedTargets: Array.from(trainedTargetsSet),
       exercises: exerciseIdsList,
-      exerciseSnapshots,
       completedAt: new Date(),
     });
 
-    // Populate normalized workout_session_exercises records
-    if (sessionExerciseDocs.length) {
-      const withSessionId = sessionExerciseDocs.map((doc) => ({
-        ...doc,
-        sessionId: session._id,
-        createdAt: session.completedAt,
-        updatedAt: session.completedAt,
-      }));
-      await this.sessionExerciseModel.insertMany(withSessionId);
+    // Save normalized workout_session_exercises and workout_session_sets
+    if (preparedExercises.length) {
+      const insertedExercises = await this.sessionExerciseModel.insertMany(
+        preparedExercises.map((item) => ({
+          ...item.doc,
+          sessionId: session._id,
+        })),
+      );
+
+      const setDocs: any[] = [];
+      insertedExercises.forEach((exDoc, idx) => {
+        const sets = preparedExercises[idx].sets;
+        sets.forEach((s) => {
+          setDocs.push({
+            sessionExerciseId: exDoc._id,
+            sessionId: session._id,
+            userId: userObjId,
+            exerciseId: exDoc.exerciseId,
+            setNumber: s.setNumber,
+            reps: s.reps,
+            weight: s.weight,
+            isPR: s.isPR,
+          });
+        });
+      });
+
+      if (setDocs.length) {
+        await this.sessionSetModel.insertMany(setDocs);
+      }
     }
 
     return {

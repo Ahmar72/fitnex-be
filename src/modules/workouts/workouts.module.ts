@@ -7,6 +7,10 @@ import {
   WorkoutItemEntity,
   WorkoutItemEntitySchema,
 } from './schemas/workout-item-entity.schema';
+import {
+  WorkoutItemSet,
+  WorkoutItemSetSchema,
+} from './schemas/workout-item-set.schema';
 import { ExercisesModule } from '../exercises/exercises.module';
 
 /**
@@ -19,6 +23,7 @@ import { ExercisesModule } from '../exercises/exercises.module';
     MongooseModule.forFeature([
       { name: Workout.name, schema: WorkoutSchema },
       { name: WorkoutItemEntity.name, schema: WorkoutItemEntitySchema },
+      { name: WorkoutItemSet.name, schema: WorkoutItemSetSchema },
     ]),
     ExercisesModule,
   ],

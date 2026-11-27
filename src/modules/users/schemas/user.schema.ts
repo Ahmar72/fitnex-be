@@ -5,9 +5,8 @@ export type UserDocument = HydratedDocument<User>;
 
 /**
  * User Mongoose Schema
- * 
- * Stores user account credentials, profile data, roles, application settings,
- * and security tokens. Sensitive fields are hidden from JSON transforms and queries.
+ *
+ * Flat, readable user document without nested profile objects.
  */
 @Schema({
   collection: 'users',
@@ -15,6 +14,10 @@ export type UserDocument = HydratedDocument<User>;
   toJSON: {
     transform: (_, ret: any) => {
       ret.id = ret._id.toString();
+      ret.profile = {
+        goal: ret.goal || 'muscle',
+        level: ret.level || 'intermediate',
+      };
       delete ret._id;
       delete ret.__v;
       delete ret.password;
@@ -88,8 +91,11 @@ export class User extends Document {
   @Prop({ default: 60 })
   restTimerSeconds: number;
 
-  @Prop({ type: Object, default: {} })
-  profile: Record<string, any>;
+  @Prop({ default: 'muscle' })
+  goal: string;
+
+  @Prop({ default: 'intermediate' })
+  level: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

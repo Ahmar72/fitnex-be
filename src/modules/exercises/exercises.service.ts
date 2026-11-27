@@ -14,6 +14,10 @@ import {
   ExerciseFavoriteDocument,
 } from './schemas/exercise-favorite.schema';
 import {
+  ExerciseTranslation,
+  ExerciseTranslationDocument,
+} from './schemas/exercise-translation.schema';
+import {
   ExerciseSortEnum,
   FilterExercisesDto,
 } from './dto/filter-exercises.dto';
@@ -38,6 +42,8 @@ export class ExercisesService implements OnModuleInit {
     public readonly exerciseModel: Model<ExerciseDocument>,
     @InjectModel(ExerciseFavorite.name)
     public readonly favoriteModel: Model<ExerciseFavoriteDocument>,
+    @InjectModel(ExerciseTranslation.name)
+    public readonly translationModel: Model<ExerciseTranslationDocument>,
   ) {
     this.loadLegacyMap();
   }
@@ -260,6 +266,26 @@ export class ExercisesService implements OnModuleInit {
     }
 
     throw new NotFoundException(`Exercise with ID "${id}" was not found`);
+  }
+
+  /**
+   * Retrieves single exercise details with localized step translations assembled from `exercise_translations`
+   */
+  async findByIdWithTranslations(id: string): Promise<any> {
+    const exercise = await this.findById(id);
+    const translations = await this.translationModel
+      .find({ exerciseId: exercise._id })
+      .exec();
+
+    const i18n: Record<string, string[]> = {};
+    for (const tr of translations) {
+      i18n[tr.language] = tr.steps;
+    }
+
+    return {
+      ...exercise.toJSON(),
+      i18n,
+    };
   }
 
   /**

@@ -142,7 +142,6 @@ export class ExercisesController {
     description: 'Exercise not found',
   })
   async findById(@Param('id') id: string) {
-    const exercise = await this.exercisesService.findById(id);
-    return exercise.toJSON();
+    return this.exercisesService.findByIdWithTranslations(id);
   }
 }

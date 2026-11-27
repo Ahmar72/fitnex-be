@@ -1,14 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument, Types } from 'mongoose';
-import { SessionSet, SessionSetSchema } from './workout-session.schema';
 
 export type WorkoutSessionExerciseDocument = HydratedDocument<WorkoutSessionExercise>;
 
 /**
  * Workout Session Exercise Mongoose Schema
- * 
- * Normalized collection representing individual exercises performed
- * within a workout session, linking session and exercise entities cleanly.
+ *
+ * Normalized flat collection representing individual exercises performed
+ * within a workout session. Individual sets are stored in `workout_session_sets`.
  */
 @Schema({
   collection: 'workout_session_exercises',
@@ -52,9 +51,6 @@ export class WorkoutSessionExercise extends Document {
 
   @Prop({ default: 0 })
   maxWeight: number;
-
-  @Prop({ type: [SessionSetSchema], default: [] })
-  sets: SessionSet[];
 }
 
 export const WorkoutSessionExerciseSchema = SchemaFactory.createForClass(WorkoutSessionExercise);

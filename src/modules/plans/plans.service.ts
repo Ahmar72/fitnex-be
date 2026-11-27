@@ -15,6 +15,14 @@ import {
   UserActivePlanDocument,
 } from './schemas/user-active-plan.schema';
 import {
+  PlanOverview,
+  PlanOverviewDocument,
+} from './schemas/plan-overview.schema';
+import {
+  PlanSchedule,
+  PlanScheduleDocument,
+} from './schemas/plan-schedule.schema';
+import {
   EnrollPlanDto,
   FilterPlansDto,
   ProgressPlanDto,
@@ -36,6 +44,10 @@ export class PlansService implements OnModuleInit {
     private readonly planModel: Model<PlanDocument>,
     @InjectModel(UserActivePlan.name)
     private readonly activePlanModel: Model<UserActivePlanDocument>,
+    @InjectModel(PlanOverview.name)
+    private readonly planOverviewModel: Model<PlanOverviewDocument>,
+    @InjectModel(PlanSchedule.name)
+    private readonly planScheduleModel: Model<PlanScheduleDocument>,
   ) {}
 
   /**
@@ -140,21 +152,61 @@ export class PlansService implements OnModuleInit {
   }
 
   /**
+   * Assembles normalized plan_overviews and plan_schedules onto plan documents
+   */
+  private async attachPlanDetails(plans: PlanDocument[]): Promise<any[]> {
+    if (!plans.length) return [];
+    const planIds = plans.map((p) => p._id);
+
+    const [overviews, schedules] = await Promise.all([
+      this.planOverviewModel.find({ planId: { $in: planIds } }).sort({ order: 1 }).exec(),
+      this.planScheduleModel.find({ planId: { $in: planIds } }).sort({ dayIndex: 1 }).exec(),
+    ]);
+
+    const overviewMap = new Map<string, any[]>();
+    for (const ov of overviews) {
+      const k = ov.planId.toString();
+      if (!overviewMap.has(k)) overviewMap.set(k, []);
+      overviewMap.get(k)!.push({ label: ov.label, value: ov.value });
+    }
+
+    const scheduleMap = new Map<string, any[]>();
+    for (const sc of schedules) {
+      const k = sc.planId.toString();
+      if (!scheduleMap.has(k)) scheduleMap.set(k, []);
+      scheduleMap.get(k)!.push({
+        day: sc.day,
+        title: sc.title,
+        focus: sc.focus,
+        isRest: sc.isRest,
+        exerciseIds: sc.exerciseIds,
+      });
+    }
+
+    return plans.map((p) => ({
+      ...p.toJSON(),
+      overview: overviewMap.get(p._id.toString()) || [],
+      schedule: scheduleMap.get(p._id.toString()) || [],
+    }));
+  }
+
+  /**
    * Retrieves all workout programs with optional category filtering
    */
-  async findAll(filterDto: FilterPlansDto): Promise<PlanDocument[]> {
+  async findAll(filterDto: FilterPlansDto): Promise<any[]> {
     const query: any = {};
     if (filterDto.category && filterDto.category !== 'all') {
       query.key = filterDto.category.toLowerCase().trim();
     }
 
-    return this.planModel.find(query).exec();
+    const plans = await this.planModel.find(query).exec();
+    return this.attachPlanDetails(plans);
   }
 
   /**
    * Retrieves detailed program metadata and schedule by ID
    */
-  async findById(id: string): Promise<PlanDocument> {
+  async findById(id: string): Promise<any> {
     const conditions: any[] = [{ planId: id }];
     if (Types.ObjectId.isValid(id)) {
       conditions.push({ _id: new Types.ObjectId(id) });
@@ -168,7 +220,8 @@ export class PlansService implements OnModuleInit {
       throw new NotFoundException(`Training plan with ID "${id}" was not found`);
     }
 
-    return plan;
+    const [assembled] = await this.attachPlanDetails([plan]);
+    return assembled;
   }
 
   /**
@@ -184,17 +237,18 @@ export class PlansService implements OnModuleInit {
       return null;
     }
 
-    const plan = await this.planModel.findOne({ planId: active.planId }).exec();
+    const planDoc = await this.planModel.findOne({ planId: active.planId }).exec();
+    const [assembledPlan] = planDoc ? await this.attachPlanDetails([planDoc]) : [null];
     const enrollmentJson = active.toJSON() as any;
 
     return {
       ...enrollmentJson,
       planId: active.planId,
-      planName: plan?.name || active.planId,
+      planName: assembledPlan?.name || active.planId,
       daysPerWeek: active.daysPerWeek || 3,
       startedAt: active.enrolledAt,
       enrollment: enrollmentJson,
-      plan: plan ? plan.toJSON() : null,
+      plan: assembledPlan,
     };
   }
 
@@ -234,7 +288,7 @@ export class PlansService implements OnModuleInit {
       daysPerWeek: enrollment.daysPerWeek,
       startedAt: enrollment.enrolledAt,
       enrollment: enrollmentJson,
-      plan: plan.toJSON(),
+      plan,
     };
   }
 
